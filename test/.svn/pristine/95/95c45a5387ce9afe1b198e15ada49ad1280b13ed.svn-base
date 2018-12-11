@@ -1,0 +1,30 @@
+package object;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class DecNode {
+	List<NNode> node;
+	String chart;
+
+	public DecNode() {
+		this.node = new ArrayList();
+		this.chart = null;
+	}
+
+	public List<NNode> getNode() {
+		return node;
+	}
+
+	public void setNode(List<NNode> node) {
+		this.node = node;
+	}
+
+	public String getChart() {
+		return chart;
+	}
+
+	public void setChart(String chart) {
+		this.chart = chart;
+	}
+}

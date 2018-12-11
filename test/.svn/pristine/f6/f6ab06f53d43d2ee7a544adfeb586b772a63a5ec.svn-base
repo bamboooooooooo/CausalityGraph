@@ -1,0 +1,17 @@
+package type;
+
+import java.util.ArrayList;
+
+
+/*
+ * 
+ * preActivity of one activity
+ * 
+ * */
+
+public class SequenceOrder{
+	public String activity;
+	public String activityRole;
+	public ArrayList<String> preActivity = new ArrayList<String>();
+	public ArrayList<String> preActivityRole = new ArrayList<String>();
+}

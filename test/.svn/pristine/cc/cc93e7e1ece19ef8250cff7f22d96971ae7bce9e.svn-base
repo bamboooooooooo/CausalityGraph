@@ -1,0 +1,302 @@
+package function;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import object.Chart;
+import object.Edge;
+import object.Keys;
+import object.NNode;
+import object.P_Keys;
+import object.T_Keys;
+
+public class BasicPath {
+	public List<P_Keys> list = new ArrayList(); // 记录数据
+	public List<List<P_Keys>> list2 = new ArrayList(); // 记录数据
+	public List<NNode> list1 = new ArrayList(); // 存储访问过的节点
+
+	public List<List<P_Keys>> FindPath(NNode node, Chart c, List<Chart> cha, List<Keys> list3, List<T_Keys> T_list)
+			throws ClassNotFoundException, IOException { // node是起始节点，
+															// list3是依赖关系，
+															// T_list时间影响关系
+		NNode nextnode = new NNode(); // 下一个节点
+		List<Keys> list4 = new BasicPath().deepCopy(list3); // 存储有效依赖
+		for (int i = 0; i < list4.size(); i++) {
+			if (!list4.get(i).getTwo().getType().equals("uml:DecisionNode")) {
+				list4.remove(i);
+				i--;
+			} else if (list4.get(i).getOne().getChart().equals(list4.get(i).getTwo().getChart())) {
+				list4.remove(i);
+				i--;
+			}
+		}
+		for (Keys k : list4) {
+			new GenerateKeyVal().GenerateKV(k, cha);
+		}
+		while (node != null) {
+			int a = 0;
+			if (node.getType().equals("uml:DecisionNode") && !list1.contains(node)) {
+				NNode n = null;
+				for (Keys k : list3) { // 考虑依赖关系在同一张图的情况
+					NNode n1 = k.getOne();
+					NNode n2 = k.getTwo();
+					if (new GetName().varname(n1).equals(new GetName().varname(node))) {
+						n = n2;
+					}
+				}
+				if (n != null) { // 判断n是否在list中
+					for (P_Keys p1 : list)
+						if (p1.getNode() == n)
+							a = 1;
+				}
+				if (a == 0) {
+					P_Keys p = new P_Keys();
+					p.setNode(node);
+					p.setBool("true"); // Bool为true表示走ture路径
+					list.add(p);
+				}
+				nextnode = FindNextNode(node, c, "true");
+				list1.add(node);
+			} else if (list1.contains(node) || node.getType().equals("uml:FlowFinalNode")
+					|| node.getType().equals("uml:ActivityFinalNode")) {
+				nextnode = null;
+				if (!list1.contains(node))
+					list1.add(node);
+				for (P_Keys t : list)
+					GenerateDate(t, list4); // 根据bool变量生成值ֵ
+				if (list.size() > 0) {
+					List<P_Keys> tmp = new ArrayList();
+					try {
+						tmp = deepCopy(list);
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					for (int i = 0; i < tmp.size(); i++) {
+						NNode t = tmp.get(i).getNode();
+						for (T_Keys tk : T_list) // ʱ��Ӱ���ϵ
+							if (tk.getOne().getName().equals(t.getName())
+									&& tk.getOne().getChart().equals(t.getChart())) {
+								NNode t1 = tk.getTwo().get(0);
+								NNode t2 = tk.getTwo().get(1);
+								P_Keys b1 = new P_Keys();
+								P_Keys b2 = new P_Keys();
+								if (t1.getType().equals("uml:DecisionNode")) {
+									b1.setNode(t1);
+									b1.setValue(null);
+									b2.setNode(t2);
+									b2.setValue("5");
+								} else {
+									b1.setNode(t1);
+									b1.setValue("5");
+									b2.setNode(t2);
+									b2.setValue(null);
+								}
+								tmp.add(i + 1, b1);
+								tmp.add(i + 2, b2);
+							}
+						/*
+						 * if (a1 == 0) { for (Keys k : list3) if
+						 * (k.getOne().getName().equals(t.getName()) &&
+						 * k.getOne().getChart().equals(t.getChart())) { NNode
+						 * t4 = k.getTwo(); P_Keys b3 = new P_Keys();
+						 * b3.setNode(t4); b3.setValue("5"); tmp.add(i + 1, b3);
+						 * } }
+						 */
+					}
+					list2.add(tmp);
+				}
+				// �ж���һ·��
+				while (!list.isEmpty()) {
+					if (list.get(list.size() - 1).getBool().equals("true")) {
+						list.get(list.size() - 1).setBool("false");
+						NNode nextnode1 = FindNextNode(list.get(list.size() - 1).getNode(), c, "false");
+						FindPath(nextnode1, c, cha, list3, T_list);
+					} else if (list.get(list.size() - 1).getBool().equals("false")) {
+						list.remove(list.size() - 1);
+						if (list.size() > 0) { // ɾ�������ڵ�ͬʱ��ɾ���ýڵ㵽�����ڵ�֮����ʹ��Ľڵ�
+							NNode end = list.get(list.size() - 1).getNode();
+							for (int i = list1.size() - 1; list1.get(i) != end; i--)
+								list1.remove(i);
+						}
+					}
+				}
+			} else if (node.getType().equals("uml:ForkNode")) {
+				list1.add(node);
+				nextnode = null;
+				int i = 0;
+				while (node.getOutIdref()[i] != null) {
+					String nextid = node.getOutIdref()[i];
+					NNode nextnode2 = new Rely().FindNode(nextid, c);
+					FindPath(nextnode2, c, cha, list3, T_list);
+					i++;
+				}
+			} else {
+				list1.add(node);
+				int i = 0;
+				while (node.getOutIdref()[i] != null) {
+					String nextid = node.getOutIdref()[i];
+					nextnode = new Rely().FindNode(nextid, c);
+					i++;
+				}
+			}
+			node = nextnode;
+		}
+		return list2;
+	}
+
+	public NNode FindNextNode(NNode node, Chart c, String bool) {
+		NNode n = new NNode();
+		for (String id : node.getOutIdref()) {
+			for (Edge e : c.getEdge())
+				if (e.getId().equals(id) && e.getBool().equals(bool)) {
+					n = new Rely().FindNode(id, c);
+				}
+		}
+		return n;
+	}
+
+	public void GenerateDate(P_Keys t, List<Keys> list4) {
+		String E1 = null;
+		String E2 = null;
+		String op = null;
+		String[] exp = new E1opE2().GetE1opE2(t.getNode().getName());
+		List<String> vals = new ArrayList();
+		E1 = exp[0];
+		E2 = exp[2];
+		op = exp[1];
+		int a = 0; // 判断当前节点是否存在有效依赖
+		for (Keys k : list4) {
+			String name1 = new GetTableName().GetNNodeName(t.getNode());
+			String name2 = new GetTableName().GetNNodeName(k.getOne());
+			if (name1.equals(name2)) {
+				a = 1;
+				vals = k.getOne_val();
+			}
+		}
+		if (t.getBool().equals("true")) {
+			if (op.equals(">")) {
+				if (a == 0) {
+					int values = Integer.parseInt(E2) + 2;
+					String v = String.valueOf(values);
+					t.setValue(v);
+				} else {
+					int val1 = Integer.parseInt(vals.get(0));
+					int val2 = Integer.parseInt(vals.get(1));
+					int values = Integer.parseInt(E2);
+					String v = null;
+					if (val1 > values)
+						v = String.valueOf(val1);
+					else if (val2 > values)
+						v = String.valueOf(val2);
+					t.setValue(v);
+				}
+			} else if (op.equals("<")) {
+				if (a == 0) {
+					int values = Integer.parseInt(E2) - 2;
+					String v = String.valueOf(values);
+					t.setValue(v);
+				} else {
+					int val1 = Integer.parseInt(vals.get(0));
+					int val2 = Integer.parseInt(vals.get(1));
+					int values = Integer.parseInt(E2);
+					String v = null;
+					if (val1 < values)
+						v = String.valueOf(val1);
+					else if (val2 < values)
+						v = String.valueOf(val2);
+					t.setValue(v);
+				}
+			} else {
+				switch (E2) {
+				case "true":
+					t.setValue("\"true\"");
+					break;
+				case "false":
+					t.setValue("\"false\"");
+					break;
+				default:
+					t.setValue(E2);
+				}
+			}
+		} else {
+			if (op.equals(">") || op.equals(">=")) {
+				if (a == 0) {
+					int values = Integer.parseInt(E2) - 2;
+					String v = String.valueOf(values);
+					t.setValue(v);
+				} else {
+					int val1 = Integer.parseInt(vals.get(0));
+					int val2 = Integer.parseInt(vals.get(1));
+					int values = Integer.parseInt(E2);
+					String v = null;
+					if (val1 < values)
+						v = String.valueOf(val1);
+					else if (val2 < values)
+						v = String.valueOf(val2);
+					t.setValue(v);
+				}
+			} else if (op.equals("<") || op.equals("<=")) {
+				if (a == 0) {
+					int values = Integer.parseInt(E2) + 2;
+					String v = String.valueOf(values);
+					t.setValue(v);
+				} else {
+					int val1 = Integer.parseInt(vals.get(0));
+					int val2 = Integer.parseInt(vals.get(1));
+					int values = Integer.parseInt(E2);
+					String v = null;
+					if (val1 > values)
+						v = String.valueOf(val1);
+					else if (val2 > values)
+						v = String.valueOf(val2);
+					t.setValue(v);
+				}
+			} else {
+				switch (E2) {
+				case "true":
+					t.setValue("\"false\"");
+					break;
+				case "false":
+					t.setValue("\"true\"");
+					break;
+				default:
+					if (a == 0) {
+						int values = Integer.parseInt(E2) - 1;
+						String v = String.valueOf(values);
+						t.setValue(v);
+					} else {
+						int val1 = Integer.parseInt(vals.get(0));
+						int val2 = Integer.parseInt(vals.get(1));
+						int values = Integer.parseInt(E2);
+						String v = null;
+						if (val1 != values)
+							v = String.valueOf(val1);
+						else if (val2 != values)
+							v = String.valueOf(val2);
+						t.setValue(v);
+					}
+
+					break;
+				}
+			}
+		}
+	}
+
+	public static <T> List<T> deepCopy(List<T> src) throws IOException, ClassNotFoundException {
+		ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+		ObjectOutputStream out = new ObjectOutputStream(byteOut);
+		out.writeObject(src);
+
+		ByteArrayInputStream byteIn = new ByteArrayInputStream(byteOut.toByteArray());
+		ObjectInputStream in = new ObjectInputStream(byteIn);
+		@SuppressWarnings("unchecked")
+		List<T> dest = (List<T>) in.readObject();
+		return dest;
+	}
+}

@@ -1,0 +1,612 @@
+package main;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.util.ArrayList;
+import java.util.Stack;
+
+import type.ActivityPartition;
+import type.Comment;
+import type.Correspondence;
+import type.Node;
+import type.SequenceOrder;
+import type.Transition;
+import type.Variable;
+
+public class ComponentModel {
+
+	public static void main(String[] args) throws Exception {
+		// TODO Auto-generated method stub
+		String actFilePath = "C:\\Users\\wen\\Desktop\\XMI\\Components\\OverloadController.xml";
+		String sysActFile = "C:\\Users\\wen\\Desktop\\XMI\\SystemActivity.xml";
+		ArrayList<String> bddFiles = new ArrayList<String>();
+		bddFiles.add("C:\\Users\\wen\\Desktop\\XMI\\icBDD.xml");
+		bddFiles.add("C:\\Users\\wen\\Desktop\\XMI\\ecBDD.xml");
+		transform(actFilePath, sysActFile, bddFiles);
+	}
+
+	public static String transform(String actFilePath, String sysActFile, ArrayList<String> bddFiles) throws Exception {
+		String filePath = null;
+		String newFilePath = null;
+		ArrayList<Transition> transitions = ActXMI.parseTransition(actFilePath);
+		ArrayList<Node> nodes = ActXMI.parseNode(actFilePath);
+		ArrayList<ActivityPartition> aps = ActXMI.parseActivityPartition(actFilePath);
+		Comment comment = ActXMI.parseComment(actFilePath);
+		ArrayList<SequenceOrder> sequenceOrders = new ArrayList<SequenceOrder>();
+		ArrayList<Correspondence> correspondences = new ArrayList<Correspondence>();
+		if (sysActFile != "") {
+			sequenceOrders = ActXMI.parseSequenceOrder(sysActFile);
+			ArrayList<String> files = new ArrayList<String>();
+			files.add(actFilePath);
+			correspondences = ActXMI.parsePACorrespondence(files);
+		}
+
+		for (ActivityPartition ap : aps) {
+			filePath = "modelicamodels/txt/" + ap.classname + ".txt";
+			File file = new File(filePath);
+			file.createNewFile();
+			BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+			/*----------Modelica Model------------*/
+			System.out.println("model " + ap.classname);
+			writer.write("model " + ap.classname + "\r\n");
+			/*----------declaration section------*/
+			ArrayList<Variable> variables = BDDXMI.parseVariable(bddFiles, ap.classname);
+			ArrayList<Node> timerNodes = new ArrayList<Node>();
+			/*----------declare variable---------*/
+			for (Variable v : variables) {
+				if (v.isStatic == true) {
+					System.out.println("  parameter " + v.type + " " + v.name + " = " + v.defaultValue + ";");
+					writer.write("  parameter " + v.type + " " + v.name + " = " + v.defaultValue + ";" + "\r\n");
+				} else {
+					if (v.defaultValue != null) {
+						System.out.println("  " + v.type + " " + v.name + "(start = " + v.defaultValue + ");");
+						writer.write("  " + v.type + " " + v.name + "(start = " + v.defaultValue + ");" + "\r\n");
+					} else {
+						System.out.println("  " + v.type + " " + v.name + ";");
+						writer.write("  " + v.type + " " + v.name + ";" + "\r\n");
+					}
+				}
+			}
+			/*---------declare finish flag of preActivity--------*/
+			boolean preActivity = false;
+			int counts = 0;
+			if (sysActFile != "") {
+				for (Correspondence c : correspondences) {
+					if (c.partition.equals(ap.classname)) {
+						for (SequenceOrder so : sequenceOrders) {
+							if (so.activity.equals(c.activity)) {
+								int i = 1;
+								if (so.preActivity.size() == 1) {
+									System.out.println("  Boolean preIsFinish;");
+									writer.write("  Boolean preIsFinish;" + "\r\n");
+									preActivity = true;
+									counts = 1;
+								} else if (so.preActivity.size() > 1) {
+									while (i <= so.preActivity.size()) {
+										System.out.println("  Boolean preIsFinish" + i + ";");
+										writer.write("  Boolean preIsFinish" + i + ";" + "\r\n");
+										i++;
+									}
+									preActivity = true;
+									counts = i - 1;
+								}
+							}
+						}
+					}
+				}
+			}
+			if(comment.body !=null && comment.body.contains("preActivity")){
+				System.out.println("  Boolean preIsFinish;");
+				writer.write("  Boolean preIsFinish;" + "\r\n");
+			}			
+			/*----------finish flag of activity---------*/
+			/*if (!isExternalComponent(ap.name, correspondences)) {*/
+				System.out.println("  Boolean isFinish;");
+				writer.write("  Boolean isFinish;" + "\r\n");
+			/*}*/
+			/*---Timer---*/
+			for (Node node : nodes) {
+				if (node.type.equals("AcceptEventTimer") && node.name.contains("after")) {
+					Integer inT = node.findInTransition(transitions, node).size();
+					if (inT == 1) {
+						timerNodes.add(node);
+					}
+				}
+			}
+			if (!timerNodes.isEmpty()) {
+				for (Integer i = 1; i <= timerNodes.size(); i++) {
+					System.out.println("  Modelica.Blocks.Logical.Timer timer" + i + ";");
+					writer.write("   Modelica.Blocks.Logical.Timer timer" + i + ";" + "\r\n");
+				}
+			}
+
+			/*---------algorithm section---------*/
+			System.out.println("algorithm");
+			writer.write("algorithm" + "\r\n");
+
+			/*--------interrupt event------------*/
+			for (Node n : nodes) {
+				if (n.type.equals("AcceptEvent") && n.findInTransition(transitions, n).size() == 0) {
+					if (n.name.contains("Signal")) {
+						System.out.println("if " + n.name + " then");
+						writer.write("if " + n.name + " then" + "\r\n");
+						System.out.println(" isFinish := true;");
+						writer.write(" isFinish := true;" + "\r\n");
+						System.out.println("end if;");
+						writer.write("end if;" + "\r\n");
+					} else {
+						System.out.println("if " + n.name + " > 0 then");
+						writer.write("if " + n.name + " > 0 then" + "\r\n");
+						System.out.println(" isFinish := true;");
+						writer.write(" isFinish := true;" + "\r\n");
+						System.out.println("end if;");
+						writer.write("end if;" + "\r\n");
+					}
+				}
+			}
+
+			Node node = new Node();
+			Node nextNode = new Node();
+			// For external
+			/*
+			 * Node initialNode = null; for (Node n : nodes) { if
+			 * (n.type.equals("Initial")) { initialNode = n; break; } }
+			 */
+			Stack<Node> iniNodes = new Stack<Node>();
+			iniNodes = findInitialNodes(nodes, transitions);//
+
+			Stack<Node> ifNodes = new Stack<Node>();
+			Stack<Node> forkNextNodes = new Stack<Node>(); // next nodes of fork
+															// node
+			Stack<Boolean> singleIfs = new Stack<Boolean>(); // single if
+			Stack<Boolean> whens = new Stack<Boolean>(); // when clause
+			ArrayList<Transition> loopT = new ArrayList<Transition>();
+			ArrayList<Boolean> finalIfs = new ArrayList<Boolean>();
+			ArrayList<Node> visitedNodes = new ArrayList<Node>();
+			Boolean isLoop = false;
+			Boolean hasVisitMerge = false;
+			Integer beforeNum = 0;
+
+			
+
+			/*---------start of traversal------------*/
+			// node = initialNode; For external
+
+			if (ap.classname.equals("StateMonitorSys")) {
+				SlidingWindow.transformSlidingWindow(writer, nodes,preActivity);
+			} else {
+				/*--------constraint of preActivity-----------*/
+				if (preActivity) {
+					System.out.print("if");
+					writer.write("if");
+					if (counts == 1) {
+						System.out.println(" preIsFinish then");
+						writer.write(" preIsFinish then" + "\r\n");
+					} else {
+						for (int i = 1; i < counts; i++) {
+							System.out.print(" preIsFinish" + i + " and");
+							writer.write(" preIsFinish" + i + " and");
+						}
+						System.out.println(" preIsFinish" + counts + " then");
+						writer.write(" preIsFinish" + counts + " then" + "\r\n");
+					}
+				}
+				node = iniNodes.pop();//
+				while (node.id != null) {
+					visitedNodes.add(node);
+					if (node.type.equals("PrimitiveAction")) {
+						System.out.println(" " + node.name + ";");
+						writer.write(" " + node.name + ";" + "\r\n");
+						nextNode = node.findNextNode(nodes, transitions, node.id);
+					} else if (node.type.equals("Decision")) {
+						ifNodes.push(node);
+						ArrayList<Transition> inTs = new ArrayList<Transition>(); // incoming
+																					// transitions
+																					// of
+																					// decision
+																					// node
+						for (Transition t : transitions) {
+							if (t.target.equals(node.id)) {
+								inTs.add(t);
+							}
+						}
+						if (inTs.size() == 1) { /* if-else */
+							if (findFalseNode(node, transitions, nodes).type.equals("Merge")
+									|| isVisited(findFalseNode(node, transitions, nodes), visitedNodes)) {
+								singleIfs.push(true);
+							} else {
+								singleIfs.push(false);
+							}
+							hasVisitMerge = false;
+							nextNode = findTrueNode(node, transitions, nodes);
+
+							System.out.println("if " + node.name + " then");
+							writer.write("if " + node.name + " then" + "\r\n");
+
+						} else { /* loop */
+							System.out.println("while " + node.name + " loop");
+							writer.write("while " + node.name + " loop" + "\r\n");
+							for (Transition t : transitions) {
+								if (t.source.equals(node.id)) {
+									loopT.add(t);
+								}
+							}
+							Transition t3 = new Transition();
+							for (Transition t : loopT) {
+								if (t.guard.equals("true")) {
+									t3 = t;
+								}
+							}
+							for (Node node2 : nodes) {
+								if (node2.id.equals(t3.target)) {
+									nextNode = node2;
+								}
+							}
+						}
+					} else if (node.type.equals("Merge") & !isLoop) {
+						if ((!singleIfs.empty()) && singleIfs.peek() && !hasVisitMerge) { // hasVisitMerge:For
+																							// EmergencySys
+							if (!findTrueNode(ifNodes.peek(), transitions, nodes).type.equals("Merge")) { // single
+																											// if
+																											// encounters
+																											// a
+																											// merge
+																											// node
+								System.out.println("end if;");
+								writer.write("end if;" + "\r\n");
+								// For CalOne
+								singleIfs.pop();
+								ifNodes.pop();
+							}
+							nextNode = node.findNextNode(nodes, transitions, node.id);
+						} else { // if-else clause: ends
+							if (hasVisitMerge) {
+								System.out.println("end if;");
+								writer.write("end if;" + "\r\n");
+								// For BParachuteSys
+								if (ifNodes.peek().type.equals("AcceptEvent")) {
+									System.out.println("end if;");
+									writer.write("end if;" + "\r\n");
+									singleIfs.pop();
+									ifNodes.pop();
+								}
+								/*
+								 * singleIfs.pop(); ifNodes.pop();
+								 */ // For CalOne
+								nextNode = node.findNextNode(nodes, transitions, node.id);
+							} else {// if-else clause: first visit
+								hasVisitMerge = true;
+								nextNode = findFalseNode(ifNodes.peek(), transitions, nodes);
+								// For CalOne
+								singleIfs.pop();
+								ifNodes.pop();
+								if (nextNode.type.equals("Decision")) {
+									System.out.print("else");
+									writer.write("else");
+								} else {
+									System.out.println("else");
+									writer.write("else" + "\r\n");
+								}
+							}
+						}
+					} else if (node.type.equals("Merge") & isLoop) {
+						System.out.println("end while;");
+						writer.write("end while;" + "\r\n");
+						Transition t1 = new Transition();
+						for (Transition t : loopT) {
+							if (t.guard.equals("false")) {
+								t1 = t;
+							}
+						}
+						for (Node node1 : nodes) {
+							if (node1.id.equals(t1.target)) {
+								nextNode = node1;
+							}
+						}
+					} else if (node.type.equals("Fork")) {
+						ArrayList<Transition> outTs = node.findOutTransition(transitions, node);
+						for (Transition t : outTs) {
+							Node node1 = t.findTargetNode(nodes, t.target);
+							forkNextNodes.push(node1);
+						}
+						nextNode = forkNextNodes.pop();
+						beforeNum = ifNodes.size();
+					} else if (node.type.equals("AcceptEventTimer")) {
+						int index1 = node.name.indexOf("(");
+						int index2 = node.name.indexOf(")");
+						String nodeName = node.name.substring(index1 + 1, index2);
+						if (node.name.contains("at")) {
+							Node dNextNode = new Node();
+							dNextNode = node.findNextNode(nodes, transitions, node.id);
+							System.out.println("when time > " + nodeName + " then");
+							writer.write("when time > " + nodeName + " then" + "\r\n");
+							System.out.println(" " + dNextNode.name + ";");
+							writer.write(" " + dNextNode.name + ";" + "\r\n");
+							System.out.println("end when;");
+							writer.write("end when;" + "\r\n");
+							nextNode = dNextNode.findNextNode(nodes, transitions, dNextNode.id);
+						} else {
+							// relative time event
+							if ((node.findInTransition(transitions, node).size() >= 2 && // timer
+																							// node
+																							// with
+																							// more
+																							// than
+																							// 2
+																							// incoming
+																							// transitions
+									node.findNextNode(nodes, transitions, node.id).type.equals("AcceptEvent"))
+									|| isWithoutIn(node, transitions)) { // next
+																			// node
+																			// is
+																			// accept
+																			// event
+								/*
+								 * System.out.println(" when sample(0," +
+								 * nodeName + ") then"); //For external object
+								 * writer.write(" when sample(0," + nodeName +
+								 * ") then" + "\r\n"); whens.push(true);
+								 */ // for external object
+								//
+								if (node.id.equals(comment.annotatedEleId)) {
+									System.out.println("when preIsFinish then");
+									writer.write("when preIsFinish then" + "\r\n");
+									System.out.println("  Time := time;");
+									writer.write("  Time := time;" + "\r\n");
+									System.out.println("end when;");
+									writer.write("end when;" + "\r\n");
+									System.out.println("when time > Time + (i - 1) * " + nodeName
+											+ " and time <= Time + i * " + nodeName + " then");
+									writer.write("when time > Time + (i - 1) * " + nodeName + " and time <= Time + i * "
+											+ nodeName + " then" + "\r\n");
+								} else {
+									System.out.println(" when sample(0," + nodeName + ") then");
+									writer.write(" when sample(0," + nodeName + ") then" + "\r\n");
+								}
+								whens.push(true);
+								//
+							} else {
+								ifNodes.push(node);
+								singleIfs.push(true);
+								System.out.println(" timer1.u := true;");
+								writer.write(" timer1.u := true;" + "\r\n");
+								System.out.println("if timer1.y > " + nodeName + " then");
+								writer.write("if timer1.y > " + nodeName + " then" + "\r\n");
+							}
+							nextNode = node.findNextNode(nodes, transitions, node.id);
+						}
+					} else if (node.type.equals("AcceptEvent")) {
+						nextNode = node.findNextNode(nodes, transitions, node.id);
+						if (node.name.contains("Signal")) {
+							ifNodes.push(node);
+							singleIfs.push(true);
+							System.out.println(" if " + node.name + " then");
+							writer.write(" if " + node.name + " then");
+						} else if (nextNode.type.equals("Decision") && nextNode.name.contains(node.name)
+								&& !nextNode.name.contains("==")) {
+							ifNodes.push(node);
+							singleIfs.push(true);
+							System.out.println(" if " + node.name + " > 0 then");
+							writer.write(" if " + node.name + " > 0 then" + "\r\n");
+						}
+					} else if (node.type.equals("SendSignal")) {
+						if (node.name.contains("Signal") || node.name.contains("Cmd")) {
+							System.out.println(" " + node.name + " := true;");
+							writer.write(" " + node.name + " := true;" + "\r\n");
+						}
+						nextNode = node.findNextNode(nodes, transitions, node.id);
+					} else if (node.type.equals("ActivityFinal")) {
+						/*
+						 * if (!isExternalComponent(ap.name, correspondences)) {
+						 */
+						System.out.println(" isFinish := true;");
+						writer.write(" isFinish := true;" + "\r\n");
+						/* } */
+						if (!singleIfs.empty() && singleIfs.peek()) {
+							while (singleIfs.peek() && ifNodes.size() > beforeNum) {
+								System.out.println("end if;");
+								writer.write("end if;" + "\r\n");
+								ifNodes.pop();
+								singleIfs.pop();
+								if (singleIfs.empty()) {
+									// if(preActivity) System.out.println("end
+									// if;");//For BParachuteSys
+									break;
+
+								}
+							}
+						}
+						if (!whens.empty()) {
+							while (whens.peek()) {
+								System.out.println("end when;");
+								writer.write("end when;" + "\r\n");
+								whens.pop();
+								if (whens.empty()) {
+									if (preActivity) {
+										System.out.println("end if;");
+										writer.write("end if;" + "\r\n");
+									}
+									break;
+								}
+							}
+						}
+						if (!singleIfs.empty()) {
+							if (!singleIfs.peek()) {
+								System.out.println("else");
+								writer.write("else" + "\r\n");
+								singleIfs.pop();
+								finalIfs.add(true);
+							}
+							nextNode = findFalseNode(ifNodes.pop(), transitions, nodes);
+						} else if (!forkNextNodes.isEmpty()) {
+							nextNode = forkNextNodes.pop();
+						} else if (!iniNodes.isEmpty()) {
+							nextNode = iniNodes.pop(); // for external
+						} else {
+							for (int i = 0; i < finalIfs.size(); i++) {
+								System.out.println("end if;");
+								writer.write("end if;" + "\r\n");
+							}
+							if (preActivity) {
+								System.out.println("end if;");
+								writer.write("end if;" + "\r\n");
+							}
+							break;
+						}
+					} else if (node.type.equals("FlowFinal")) {
+						if (!singleIfs.empty()) {
+							while (singleIfs.peek() && ifNodes.size() > beforeNum) {
+								System.out.println("end if;");
+								writer.write("end if;" + "\r\n");
+								ifNodes.pop();
+								singleIfs.pop();
+								if (singleIfs.empty()) {
+									// if(preActivity) System.out.println("end
+									// if;");//For BParachuteSys
+									break;
+								}
+							}
+						} else if (!whens.empty()) {
+							while (whens.peek()) {
+								System.out.println("end when;");
+								writer.write("end when;" + "\r\n");
+								whens.pop();
+								if (whens.empty()) {
+									break;
+								}
+							}
+						}
+
+						if (!forkNextNodes.isEmpty()) {
+							nextNode = forkNextNodes.pop();
+							beforeNum = beforeNum - 1;
+						} else if (!iniNodes.isEmpty()) { // for external
+							nextNode = iniNodes.pop();
+						} else {
+							if (preActivity) {
+								System.out.println("end if;");
+								writer.write("end if;" + "\r\n");
+							}
+							break;
+						}
+					} else {
+						nextNode = node.findNextNode(nodes, transitions, node.id);
+					}
+					node = nextNode;
+				}
+			}
+			System.out.println("end " + ap.classname + ";");
+			writer.write("end " + ap.classname + ";" + "\r\n");
+			writer.flush();
+			writer.close();
+			newFilePath = Formater.formatTxtFile(ap.classname, filePath);
+		}
+		return newFilePath;
+	}
+
+	public static Node findNode(String id, ArrayList<Node> nodes) {
+		Node node = new Node();
+		for (Node n : nodes) {
+			if (n.id.equals(id)) {
+				node = n;
+				break;
+			}
+		}
+		return node;
+	}
+
+	public static boolean isVisited(Node node, ArrayList<Node> nodes) {
+		boolean isVisited = false;
+		for (Node n : nodes) {
+			if (n.id.equals(node.id)) {
+				isVisited = true;
+			}
+		}
+		return isVisited;
+	}
+
+	public static Node findTrueNode(Node node, ArrayList<Transition> transitions, ArrayList<Node> nodes) {
+		Node trueNode = null;
+		Transition trueT = null;
+		for (Transition t : transitions) {
+			if (t.source.equals(node.id) && t.guard.equals("true")) {
+				trueT = t;
+			}
+		}
+		for (Node n : nodes) {
+			if (n.id.equals(trueT.target)) {
+				trueNode = n;
+			}
+		}
+		return trueNode;
+	}
+
+	public static Node findFalseNode(Node node, ArrayList<Transition> transitions, ArrayList<Node> nodes) {
+		Node falseNode = null;
+		Transition falseT = null;
+		for (Transition t : transitions) {
+			if (t.source.equals(node.id) && t.guard.equals("false")) {
+				falseT = t;
+			}
+		}
+		for (Node n : nodes) {
+			if (n.id.equals(falseT.target)) {
+				falseNode = n;
+			}
+		}
+		return falseNode;
+	}
+
+	// find initial nodes of traversal
+	public static Stack<Node> findInitialNodes(ArrayList<Node> nodes, ArrayList<Transition> transitions) {
+		Stack<Node> iniNodes = new Stack<Node>();
+		for (Node n : nodes) {
+			if (n.type.equals("Initial")) {
+				iniNodes.add(n);
+			} else if (n.type.equals("AcceptEventTimer") && n.name.contains("after")) {
+				if (isWithoutIn(n, transitions)) {
+					iniNodes.add(n);
+				}
+			}
+		}
+		return iniNodes;
+	}
+
+	// whether a node has no incoming transitions
+	public static boolean isWithoutIn(Node node, ArrayList<Transition> transitions) {
+		boolean isWithoutIn = true;
+		for (Transition t : transitions) {
+			if (t.target.equals(node.id)) {
+				isWithoutIn = false;
+			}
+		}
+		return isWithoutIn;
+	}
+
+	// find a node that has no incoming & relative time
+	public static Node findWithoutInTimerNode(ArrayList<Node> nodes, ArrayList<Transition> transitions) {
+		Node node = new Node();
+		for (Node n : nodes) {
+			if (n.type.equals("AcceptEventTimer") && n.name.contains("after")) {
+				if (isWithoutIn(n, transitions)) {
+					node = n;
+					break;
+				}
+			}
+		}
+		return node;
+	}
+
+	// whether is a external component
+	public static boolean isExternalComponent(String apName, ArrayList<Correspondence> cors) {
+		boolean isExternal = true;
+		for (Correspondence cor : cors) {
+			if (cor.partition.equals(apName)) {
+				isExternal = false;
+				break;
+			}
+		}
+		return isExternal;
+	}
+}

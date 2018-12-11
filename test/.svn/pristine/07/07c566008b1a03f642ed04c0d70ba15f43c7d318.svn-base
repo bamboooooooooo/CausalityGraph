@@ -1,0 +1,404 @@
+package UI;
+
+import java.awt.EventQueue;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTextArea;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.border.EmptyBorder;
+
+import org.dom4j.DocumentException;
+
+import JDBC.CreateTable;
+import function.BasicPath;
+import function.Dependency;
+import function.GetChartName;
+import function.GetName;
+import function.RelyFunction;
+import object.BDD;
+import object.Block;
+import object.Chart;
+import object.DecNode;
+import object.Keys;
+import object.NNode;
+import object.P_Keys;
+import object.T_Keys;
+
+public class Display extends JFrame {
+
+	private JPanel contentPane;
+	private JFileChooser chooser;
+	private String nextid = null;
+	public List<Keys> list = new ArrayList(); // 依赖关系的键值对
+	public List<T_Keys> T_list = new ArrayList(); // 时间影响关系
+	public List<DecNode> declist = new ArrayList(); // 存储所有图中的所有决定节点
+	public static List<Chart> cha1 = new ArrayList(); // 内部xmi
+	public static List<Chart> cha2 = new ArrayList(); // 外部xmi
+	public static List<BDD> bdd = new ArrayList(); // BDDxmi
+	private JTextArea textArea;
+
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					Display frame = new Display();
+					frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the frame.
+	 */
+	public Display() {
+		chooser = new JFileChooser("C:/Users/Z_H/Desktop");
+		setBounds(100, 100, 835, 457);
+		contentPane = new JPanel();
+		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		setContentPane(contentPane);
+
+		JSeparator separator = new JSeparator();
+
+		// 内部XMI文件
+		JButton btnXmi = new JButton("Component XMI");
+		btnXmi.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); // 设置只能选择目录
+				int value = chooser.showOpenDialog(Display.this);
+				if (value == JFileChooser.APPROVE_OPTION) {
+					String url = chooser.getSelectedFile().getPath();
+					File file = new File(url);
+					String[] fs = file.list();
+					for (String name : fs) {
+						String name1 = null;
+						try {
+							name1 = new GetChartName().chartname(url + "/" + name);
+						} catch (DocumentException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						Chart tmp = new Chart(url + "/" + name, name1);
+						if (tmp != null) {
+							cha1.add(tmp);
+							String s = textArea.getText();
+							s = s + "已导入内部XMI:" + name + "\n";
+							textArea.setText(s);
+						}
+					}
+				}
+			}
+		});
+		// 依赖关系
+		JButton btnDependence = new JButton("Dependence ");
+		btnDependence.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (declist.size() == 0) {
+					for (Chart c : cha1) {
+						declist.add(c.getDeclist()); // 存储所有的决定节点
+					}
+				}
+				int z = 0;
+				for (BDD B : bdd) {
+					z = 0;
+					for (Block b : B.getBlocks()) {
+						for (Chart c1 : cha1)
+							if (c1.getChart().equals(b.getName())) {
+								z = 1;
+								break;
+							}
+						if (z == 1)
+							break;
+						for (Chart c2 : cha2)
+							if (c2.getChart().equals(b.getName())) {
+								z = 1;
+								break;
+							}
+						if (z == 1)
+							break;
+					}
+					if (z == 0)
+						break;
+				}
+				if (z == 1) {
+					list = new RelyFunction().FinalFunction(declist, cha1);
+					for (int i = 0; i < list.size(); i++) // 删除冗余的依赖
+						for (int j = i + 1; j < list.size(); j++) {
+							String name1 = new GetName().varname(list.get(i).getOne());
+							String name2 = new GetName().varname(list.get(j).getOne());
+							String chart1 = list.get(i).getOne().getChart();
+							String chart2 = list.get(j).getOne().getChart();
+							if (name1.equals(name2) && chart1.equals(chart2))
+								list.remove(j);
+						}
+					List<Keys> tmp = new ArrayList();
+					for (int i = 0; i < list.size(); i++) {
+						if (list.get(i).getTwo().getType().equals("uml:AcceptEventTimerAction")) {
+							tmp.add(list.get(i));
+							list.remove(i);
+							i--;
+						}
+					}
+					tmp.addAll(list);
+					list = tmp;
+					String s = "";
+					for (Keys k : list) {
+						String o_c = k.getOne().getChart();
+						String o_n = new GetName().varname(k.getOne());
+						String t_c = k.getTwo().getChart();
+						String t_n = new GetName().varname(k.getTwo());
+						String s1 = "";
+						if (k.getTwo().getType().equals("uml:AcceptEventTimerAction")) {
+							String time = t_n.substring(t_n.indexOf("(") + 1, t_n.indexOf(")"));
+							s1 = "dependencyT(" + o_n + "," + time + ")依赖关系, 其中" + o_n + "是图" + o_c + "中决定节点"
+									+ k.getOne().getName() + "提取的变量，" + time + "是图" + t_c + "中变量为" + t_n
+									+ "的等待时间动作节点提取的时间变量，该关系表示变量v 依赖于时间变量t。\n";
+						}
+						if (k.getTwo().getType().equals("uml:DecisionNode")) {
+							s1 = "dependencyD(" + o_n + "," + t_n + ")依赖关系, 其中，" + o_n + " 是图" + o_c + "中决定节点"
+									+ k.getOne().getName() + " 中提取的变量," + t_n + " 是图" + t_c + "中决定节点"
+									+ k.getTwo().getName() + " 中提取的变量，该关系表示决定节点" + o_n + " 依赖于决定节点" + t_n + "\n";
+						}
+						s = s + s1;
+					}
+					textArea.setText(s);
+				} else {
+					textArea.setText("图缺失");
+				}
+			}
+		});
+		// 时间影响关系
+		JButton btnTimeInfluenceRelationship = new JButton("Time influence relationship ");
+		btnTimeInfluenceRelationship.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (list.size() != 0) {
+					T_list = new Dependency().Dependency(list, cha1, cha2);
+					for (int i = 0; i < T_list.size(); i++) // 删除冗余的依赖
+						for (int j = i + 1; j < T_list.size(); j++) {
+							String name1 = new GetName().varname(T_list.get(i).getOne());
+							String name2 = new GetName().varname(T_list.get(j).getOne());
+							if (name1.equals(name2))
+								T_list.remove(j);
+						}
+					String s = "";
+					for (T_Keys t : T_list) {
+						String s1 = "";
+						String o_c = t.getOne().getChart();
+						String o_n = new GetName().varname(t.getOne());
+						String t_c = t.getTwo().get(0).getChart();
+						String t_n = new GetName().varname(t.getTwo().get(0));
+						s1 = s1 + "timeAffection(t,acceptTime)，其中，t 下游决定节点" + t.getOne().getName()
+								+ "中变量依赖的延时时间，acceptTime 上游决定节点中变量" + t_n + " 接收到的时间。\n";
+						s = s + s1;
+					}
+					textArea.setText(s);
+					// new GetTableName().GTName(declist, list, T_list);
+					// 给openmodelica生成变量名
+				} else {
+					textArea.setText("请先生成依赖关系");
+				}
+			}
+		});
+		// 生成数据
+		JButton btnGenerateData = new JButton("Generate data ");
+		btnGenerateData.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				List<String> tables = new ArrayList();
+				// 基本路径算法
+				for (Chart c : cha1) {
+					NNode node = new NNode();
+					for (NNode n : c.getNode())
+						if (n.getType().equals("uml:InitialNode"))
+							node = n;
+					// 初始化
+					new BasicPath().list = new ArrayList();
+					new BasicPath().list1 = new ArrayList();
+					new BasicPath().list2 = new ArrayList(new ArrayList());
+					List<List<P_Keys>> list1 = new ArrayList();// LinkedList<List<P_Keys>>();
+					try {
+						list1 = new BasicPath().FindPath(node, c, cha1, list, T_list);
+					} catch (ClassNotFoundException e2) {
+						// TODO Auto-generated catch block
+						e2.printStackTrace();
+					} catch (IOException e2) {
+						// TODO Auto-generated catch block
+						e2.printStackTrace();
+					}
+					// 去除变量名一样的链
+					for (List<P_Keys> l : list1)
+						for (int i = 0; i < l.size() - 1; i++) {
+							String name1 = new GetName().varname(l.get(i).getNode());
+							String name2 = new GetName().varname(l.get(i + 1).getNode());
+							if (name1.equals(name2)) {
+								l.remove(i);
+								i--;
+							}
+						}
+					try {
+						String table = new CreateTable().cTable(list1); // 动态创建各个sysml图对应的表格
+						tables.add(table);
+					} catch (SQLException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+
+				try {
+					new CreateTable().CreateBasicPath(list, tables, cha1);
+				} catch (ClassNotFoundException | IOException | SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				new showdata().setVisible(true);
+			}
+		});
+
+		JScrollPane scrollPane = new JScrollPane();
+		// 性质分析
+		JButton btnNewButton = new JButton("Property analysis ");
+		btnNewButton.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				new XZFX().setVisible(true);
+			}
+		});
+		// 外部xmi导入
+		JButton btnxmi = new JButton("External Object XMI");
+		btnxmi.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); // 设置只能选择目录
+				int value = chooser.showOpenDialog(Display.this);
+				if (value == JFileChooser.APPROVE_OPTION) {
+					String url = chooser.getSelectedFile().getPath();
+					File file = new File(url);
+					String[] fs = file.list();
+					for (String name : fs) {
+						String name1 = null;
+						try {
+							name1 = new GetChartName().chartname(url + "/" + name);
+						} catch (DocumentException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						Chart tmp = new Chart(url + "/" + name, name1);
+						if (tmp != null) {
+							cha2.add(tmp);
+							String s = textArea.getText();
+							s = s + "已导入外部XMI:" + name + "\n";
+							textArea.setText(s);
+						}
+					}
+				}
+			}
+		});
+
+		JButton btnBddXmi = new JButton("BDD XMI");
+		btnBddXmi.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); // 设置只能选择目录
+				int value = chooser.showOpenDialog(Display.this);
+				if (value == JFileChooser.APPROVE_OPTION) {
+					String url = chooser.getSelectedFile().getPath();
+					File file = new File(url);
+					String[] fs = file.list();
+					for (String name : fs) {
+						BDD tmp = null;
+						try {
+							tmp = new BDD(url + "/" + name);
+							// 去掉StateMonitorSys
+							for (Block b : tmp.getBlocks()) {
+								if (b.getName().equals("StateMonitorSys")) {
+									tmp.getBlocks().remove(b);
+									break;
+								}
+							}
+						} catch (DocumentException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						if (tmp != null) {
+							bdd.add(tmp);
+							String s = textArea.getText();
+							s = s + "已导入BDD XMI:" + name + "\n";
+							textArea.setText(s);
+						}
+					}
+				}
+			}
+		});
+		GroupLayout gl_contentPane = new GroupLayout(contentPane);
+		gl_contentPane.setHorizontalGroup(
+			gl_contentPane.createParallelGroup(Alignment.TRAILING)
+				.addGroup(gl_contentPane.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+						.addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 758, GroupLayout.PREFERRED_SIZE)
+						.addGroup(gl_contentPane.createSequentialGroup()
+							.addComponent(btnxmi)
+							.addPreferredGap(ComponentPlacement.UNRELATED)
+							.addComponent(btnXmi)
+							.addPreferredGap(ComponentPlacement.UNRELATED)
+							.addComponent(btnBddXmi)
+							.addGap(18)
+							.addComponent(btnGenerateData))
+						.addGroup(gl_contentPane.createSequentialGroup()
+							.addComponent(btnDependence, GroupLayout.PREFERRED_SIZE, 119, GroupLayout.PREFERRED_SIZE)
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addComponent(btnTimeInfluenceRelationship)
+							.addGap(30)
+							.addComponent(btnNewButton))
+						.addComponent(separator, GroupLayout.PREFERRED_SIZE, 761, GroupLayout.PREFERRED_SIZE))
+					.addContainerGap(38, Short.MAX_VALUE))
+		);
+		gl_contentPane.setVerticalGroup(
+			gl_contentPane.createParallelGroup(Alignment.TRAILING)
+				.addGroup(gl_contentPane.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
+						.addComponent(btnxmi)
+						.addComponent(btnXmi)
+						.addComponent(btnBddXmi)
+						.addComponent(btnGenerateData))
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
+						.addComponent(btnDependence)
+						.addComponent(btnTimeInfluenceRelationship)
+						.addComponent(btnNewButton))
+					.addGap(10)
+					.addComponent(separator, GroupLayout.DEFAULT_SIZE, 1, Short.MAX_VALUE)
+					.addGap(18)
+					.addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 284, GroupLayout.PREFERRED_SIZE)
+					.addGap(29))
+		);
+
+		textArea = new JTextArea();
+		textArea.setLineWrap(true);
+		scrollPane.setViewportView(textArea);
+		contentPane.setLayout(gl_contentPane);
+	}
+}

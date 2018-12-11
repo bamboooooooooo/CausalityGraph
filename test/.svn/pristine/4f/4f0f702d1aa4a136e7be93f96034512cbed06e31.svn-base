@@ -1,0 +1,318 @@
+package JDBC;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.dom4j.DocumentException;
+
+import Function.BasicPath;
+import Function.GenerateKeyVal;
+import Function.GetTableName;
+import Object.Chart;
+import Object.Keys;
+import Object.NNode;
+import Object.P_Keys;
+import Object.TableData;
+import Object.Tables;
+
+public class CreateTable {
+	public String cTable(List<List<P_Keys>> list) throws SQLException {
+		String table = null;
+		List<TableData> TD = new ArrayList();
+		try {
+			TD = new GetTableName().GTName3(list);
+		} catch (DocumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (TD.size() > 0) {
+			// 注册驱动
+			DriverManager.registerDriver(new com.mysql.jdbc.Driver());
+			// 建立连接
+			Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/data", "root", "s13263327");
+			// 创建语句
+			Statement st = conn.createStatement();
+			String s = "";
+			String Chart = TD.get(0).getChart();
+			String s1 = "";
+			for (TableData t : TD) {
+				s1 = s1 + t.getName() + " varchar(255),";
+			}
+			s1 = (String) s1.subSequence(0, s1.length() - 1);
+			s = "DROP TABLE if EXISTS " + Chart;
+			String s2 = "CREATE TABLE if not EXISTS " + Chart + "(" + s1 + ");";
+			// 执行语句
+			boolean rs = st.execute(s);
+			rs = st.execute(s2);
+			table = Chart;
+			String s3 = "";
+			String s4 = "";
+			for (List<P_Keys> p : list) {
+				s3 = "";
+				s4 = "";
+				for (TableData t : TD) {
+					int a = 0;
+					for (P_Keys k : p) {
+						if (t.getName().equals(new GetTableName().GetNNodeName(k.getNode()))) {
+							s4 = s4 + t.getName() + "=" + k.getValue() + ",";
+							a = 1;
+							break;
+						}
+					}
+					if (a == 0)
+						s4 = s4 + t.getName() + "=" + null + ",";
+				}
+				s4 = s4.substring(0, s4.length() - 1);
+				s3 = "INSERT INTO " + Chart + " SET " + s4 + ";";
+				st.executeUpdate(s3);
+			}
+			st.close();
+			conn.close();
+		}
+		return table;
+	}
+
+	public void CreateBasicPath(List<Keys> list, List<String> tables, List<Chart> cha)
+			throws ClassNotFoundException, IOException, SQLException { // list是依赖关系
+		// 选取有效依赖关系：依赖双发都是决定节点且不在同一张图
+		List<Keys> list1 = new BasicPath().deepCopy(list); // 存储有效依赖
+		List<String> tables1 = new BasicPath().deepCopy(tables); // 不存在有效依赖的表
+		List<String> tables2 = new ArrayList(); // 存在有效依赖的表
+		List<Tables> tables3 = new ArrayList(); // 存储中间笛卡尔积后的表格，用于后续删除
+		for (int i = 0; i < list1.size(); i++) {
+			if (!list1.get(i).getTwo().getType().equals("uml:DecisionNode")) {
+				list1.remove(i);
+				i--;
+			} else if (list1.get(i).getOne().getChart().equals(list1.get(i).getTwo().getChart())) {
+				list1.remove(i);
+				i--;
+			}
+		}
+		for (Keys k : list1) {
+			String c1 = k.getOne().getChart();
+			String c2 = k.getTwo().getChart();
+			tables1.remove(c1);
+			tables1.remove(c2);
+			tables2.add(c1);
+			tables2.add(c2);
+		}
+		for (Keys k : list1) {
+			new GenerateKeyVal().GenerateKV(k, cha);
+		}
+		// 注册驱动
+		DriverManager.registerDriver(new com.mysql.jdbc.Driver());
+		// 建立连接
+		Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/data", "root", "s13263327");
+		// 创建语句
+		Statement st = conn.createStatement();
+		boolean rs = false;
+		int i = 0; // 记录生成表格数目
+		// 不存在有效依赖关系的表格进行笛卡尔积
+
+		tables1.removeAll(Collections.singleton(null)); // 去除tables1中值为null的数据
+		while (tables1.size() > 1) {
+			String t1 = tables1.get(0);
+			String t2 = tables1.get(1);
+			String s = "create table test" + i + " SELECT * FROM " + t1 + "," + t2; // 执行语句
+			rs = st.execute(s);
+			tables1.remove(t1);
+			tables1.remove(t2);
+			tables1.add("test" + i);
+			Tables t3 = new Tables();
+			t3.setT_name("test" + i);
+			List<String> ts = new ArrayList();
+			ts.add(t1);
+			ts.add(t2);
+			t3.setTables(ts);
+			tables3.add(t3);
+			i++;
+		}
+		String sE = tables1.get(0); // 不存在有效依赖表的最终组合
+		String sF = null;
+		// 存在有效依赖关系的表格进行笛卡尔积
+		if (list1.size() > 1) {
+			List<Tables> t4 = new ArrayList(); // 存储存在依赖关系的表格的笛卡尔积
+			tables2.removeAll(Collections.singleton(null));
+			// 获取依赖发起方为假时的取值，在数据库中删除相应数据
+			for (Keys k : list1) {
+				NNode n = k.getOne();
+				P_Keys p = new P_Keys();
+				p.setNode(n);
+				p.setBool("false");
+				new BasicPath().GenerateDate(p, list1);
+				String value = p.getValue();
+				String name = new GetTableName().GetNNodeName(n);
+				String s = "DELETE from " + n.getChart() + " where " + n.getChart() + ".`" + name + "`=" + value + ";";
+				rs = st.execute(s);
+			}
+			// c1、c2合并
+			Chart c1 = new Chart(); // CalOne
+			Chart c2 = new Chart(); // CalOne
+			String c_1 = list1.get(0).getOne().getChart();
+			String c_2 = list1.get(1).getOne().getChart();
+			for (Chart c : cha) {
+				if (c.getChart().equals(c_1))
+					c1 = c;
+				else if (c.getChart().equals(c_2))
+					c2 = c;
+			}
+			int n1 = c1.getDeclist().getNode().size(); // c1决定节点个数
+			int n2 = c2.getDeclist().getNode().size(); // c2决定节点个数
+			// 确保c1是calone，c2是caltwo
+			if (n1 < n2) {
+				Chart c3 = new Chart();
+				c3 = c1;
+				c1 = c2;
+				c2 = c3;
+			}
+			// 获取c2的项名
+			List<NNode> dec2 = c2.getDeclist().getNode();
+			for (int t = 0; t < dec2.size(); t++)
+				for (int j = t + 1; j < dec2.size(); j++) {
+					String name1 = new GetTableName().GetNNodeName(dec2.get(t));
+					String name2 = new GetTableName().GetNNodeName(dec2.get(j));
+					if (name1.equals(name2)) {
+						dec2.remove(j);
+						j--;
+					}
+				}
+			// 生成c1、c2合并的sql语句
+			String s1 = "";
+			String s2 = "";
+			for (NNode n : dec2) {
+				s1 = s1 + c1.getChart() + ".`" + new GetTableName().GetNNodeName(n) + "`,";
+				s2 = s2 + c2.getChart() + ".`" + new GetTableName().GetNNodeName(n) + "`,";
+			}
+			s1 = s1.substring(0, s1.length() - 1);
+			s2 = s2.substring(0, s2.length() - 1);
+			String s = "insert into " + c1.getChart() + "(" + s1 + ") select " + s2 + " from " + c2.getChart() + ";";
+			rs = st.execute(s);
+			// 根据有效依赖关系生成新的16条路径的表格
+			Chart c3 = new Chart();
+			String c_3 = list1.get(0).getTwo().getChart();
+			for (Chart c : cha)
+				if (c.getChart().equals(c_3))
+					c3 = c;
+			String name1 = new GetTableName().GetNNodeName(list1.get(0).getTwo()); // 依赖接受者变量名
+			String name2 = ""; // 雷达变量名
+			NNode n3 = new NNode(); // 存储雷达节点
+			for (NNode n : c3.getDeclist().getNode()) {
+				String name3 = new GetTableName().GetNNodeName(n);
+				if (!name3.equals(name1)) {
+					n3 = n;
+					name2 = name3;
+					break;
+				}
+			}
+			// 雷达为真时取值
+			P_Keys p = new P_Keys();
+			p.setNode(n3);
+			p.setBool("true");
+			new BasicPath().GenerateDate(p, list1);
+			String v1 = p.getValue();
+			// 雷达为假时的取值
+			p.setBool("false");
+			new BasicPath().GenerateDate(p, list1);
+			String v2 = p.getValue();
+			// 根据有效依赖关系表进行笛卡尔积
+			String name3 = new GetTableName().GetNNodeName((list1.get(0).getOne()));
+			// c1、雷达为真
+			String v3 = list1.get(0).getOne_val().get(0);
+			String v4 = list1.get(0).getTwo_val().get(0);
+			String s3 = "create table test" + i + " SELECT * FROM " + c1.getChart() + " JOIN " + n3.getChart() + " ON "
+					+ c1.getChart() + ".`" + name3 + "`= " + v3 + " and " + n3.getChart() + ".`" + name1 + "`=" + v4
+					+ " and " + n3.getChart() + ".`" + name2 + "`=" + v1 + ";";
+			Tables t5 = new Tables();
+			t5.setT_name("test" + i);
+			List<String> ts1 = new ArrayList();
+			ts1.add(c1.getChart());
+			ts1.add(n3.getChart());
+			t5.setTables(ts1);
+			tables3.add(t5);
+			i++;
+			rs = st.execute(s3);
+			// c2、雷达为真
+			String v5 = list1.get(0).getOne_val().get(1);
+			String v6 = list1.get(0).getTwo_val().get(1);
+			String s4 = "create table test" + i + " SELECT * FROM " + c1.getChart() + " JOIN " + n3.getChart() + " ON "
+					+ c1.getChart() + ".`" + name3 + "`= " + v5 + " and " + n3.getChart() + ".`" + name1 + "`=" + v6
+					+ " and " + n3.getChart() + ".`" + name2 + "`=" + v1 + ";";
+			Tables t6 = new Tables();
+			t6.setT_name("test" + i);
+			List<String> ts2 = new ArrayList();
+			ts2.add(c1.getChart());
+			ts2.add(n3.getChart());
+			t6.setTables(ts2);
+			tables3.add(t6);
+			i++;
+			rs = st.execute(s4);
+			// 合并c1和c2
+			String s5 = tables3.get(tables3.size() - 1).getT_name();
+			String s6 = tables3.get(tables3.size() - 2).getT_name();
+			String s7 = "create table test" + i + " SELECT * FROM " + s5 + " UNION ALL SELECT * FROM " + s6 + ";";
+			String sB = "test" + i; // 雷达为真的路径
+			Tables t7 = new Tables();
+			t7.setT_name("test" + i);
+			List<String> ts3 = new ArrayList();
+			ts3.add(s5);
+			ts3.add(s6);
+			t7.setTables(ts3);
+			tables3.add(t7);
+			i++;
+			rs = st.execute(s7);
+			// 雷达为假的情况
+			// 创建c1的空表
+			String s8 = "create table test" + i + " select * from " + c1.getChart() + " where " + name3 + "=3";
+			String sA = "INSERT test" + i + " SET " + name3 + "=\"\"";
+			Tables t8 = new Tables();
+			t8.setT_name("test" + i);
+			tables3.add(t8);
+			String t9 = "test" + i;
+			i++;
+			rs = st.execute(s8);
+			rs = st.execute(sA);
+			// 雷达为假的情况
+			String s9 = "create table test" + i + " SELECT * FROM " + t9 + " JOIN " + n3.getChart() + " ON "
+					+ n3.getChart() + ".`" + name2 + "`=" + v2 + ";";
+			String sC = "test" + i; // 雷达为假的路径
+			Tables tA = new Tables();
+			tA.setT_name("test" + i);
+			tables3.add(tA);
+			i++;
+			rs = st.execute(s9);
+			// 合并雷达为真和雷达为假的情况
+			String sD = "create table test" + i + " SELECT * FROM " + sB + " UNION ALL SELECT * FROM " + sC + ";";
+			rs = st.execute(sD);
+			sF = "test" + i;
+			Tables tB = new Tables();
+			tB.setT_name("test" + i);
+			tables3.add(tB);
+			i++;
+			// 删除依赖发起方
+			String sI = "ALTER TABLE " + sF + " DROP COLUMN " + name3 + ";";
+			rs = st.execute(sI);
+		}
+		// 生成最终结果
+		String sJ = "DROP TABLE if EXISTS basicpath";
+		String sG = null;
+		if (sF != null)
+			sG = "create table if not EXISTS basicpath SELECT * FROM " + sE + "," + sF + ";";
+		else
+			sG = "create table if not EXISTS basicpath SELECT * FROM " + sE;
+		rs = st.execute(sJ);
+		rs = st.execute(sG);
+		// 删除中间表格
+		for (Tables t : tables3) {
+			String sH = "DROP TABLE " + t.getT_name() + ";";
+			rs = st.execute(sH);
+		}
+		st.close();
+		conn.close();
+	}
+}

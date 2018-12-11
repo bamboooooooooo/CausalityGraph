@@ -1,0 +1,43 @@
+package main;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import type.Block;
+
+public class IBDXMI {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+	}
+
+	// get external components
+	static ArrayList<Block> parseSystemContext(String ibdFilePath) throws DocumentException {
+		ArrayList<Block> blocks = new ArrayList<Block>();		
+		if (ibdFilePath != "") {
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(ibdFilePath);
+			List<Element> BLOCKS = document.selectNodes("//packagedElement[@xmi:type='uml:Class']");
+			for (Element b : BLOCKS) {
+				Block block = new Block();
+				String name = b.attributeValue("name");
+				int index = name.indexOf(":");
+				if (index == -1) {
+					block.blockName = name;
+				} else {
+					block.blockName = name.substring(index + 1);
+					block.role = name.substring(0, index);
+				}
+				block.id = b.attributeValue("id");
+				blocks.add(block);
+			}
+		}
+		return blocks;
+	}
+}

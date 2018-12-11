@@ -1,0 +1,182 @@
+package main;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.util.ArrayList;
+import type.ActivityPartition;
+import type.Comment;
+import type.Correspondence;
+import type.Node;
+import type.SequenceOrder;
+import type.Transition;
+import type.Variable;
+
+public class SlidingWindow1{
+	public static void main(String[] args) throws Exception {
+		// TODO Auto-generated method stub
+		transformSlidingWindow("C:\\Users\\wen\\Desktop\\XMI\\StateMonitorSys.xml",
+				"C:\\Users\\wen\\Desktop\\XMI\\SystemActivity.xml","C:\\Users\\wen\\Desktop\\XMI\\BDD.xml");
+	}
+
+	public static String transformSlidingWindow(String actFilePath, String sysActFile,String bddFilePath) throws Exception {
+		String fileName = null;
+		ArrayList<Transition> transitions = ActXMI.parseTransition(actFilePath);
+		ArrayList<Node> nodes = ActXMI.parseNode(actFilePath);
+		ArrayList<ActivityPartition> aps = ActXMI.parseActivityPartition(actFilePath);
+		ArrayList<SequenceOrder> sequenceOrders = ActXMI.parseSequenceOrder(sysActFile);
+		ArrayList<String> files = new ArrayList<String>();files.add(actFilePath);
+		ArrayList<Correspondence> correspondences = ActXMI.parsePACorrespondence(files);
+		Comment comment = ActXMI.parseComment(actFilePath);
+		Node timerNode = findTimerNode(nodes);
+        /*Generate Model*/		
+		for (ActivityPartition ap : aps) {
+			fileName = "C:\\Users\\wen\\Desktop\\ModelicaModel\\" + ap.classname + ".txt";
+			File file = new File(fileName);
+			file.createNewFile();
+			BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+			/* Modelica Model */
+			System.out.println("model " + ap.classname);
+			writer.write("model " + ap.classname + "\r\n");
+            /*declare variable*/
+			ArrayList<Variable> variables = new ArrayList<Variable>(); //BDDXMI.parseVariable(bddFilePath, ap.classname);
+			ArrayList<Node> timerNodes = new ArrayList<Node>();			
+			for(Variable v:variables){
+				if(v.isStatic == true ){
+					System.out.println("  parameter "+ v.type + " " + v.name + " = " + v.defaultValue + ";");
+					writer.write("  parameter "+ v.type + " " + v.name + " = " + v.defaultValue + ";" + "\r\n");
+				}
+				else{
+					if(v.defaultValue != null){
+						System.out.println("  "+ v.type + " " + v.name + "(start = " + v.defaultValue + ");");
+						writer.write("  "+ v.type + " " + v.name + "(start = " + v.defaultValue + ");" + "\r\n");
+					}else{
+						System.out.println("  "+ v.type + " " + v.name + ";");
+						writer.write("  "+ v.type + " " + v.name + ";" + "\r\n");
+					}
+				}
+			}
+			/*declare flag of preActivity*/
+			boolean preActivity = false;
+			int counts = 0;
+			for (Correspondence c : correspondences) {
+				if (c.partition.equals(ap.classname)) {
+					for (SequenceOrder so : sequenceOrders) {
+						if (so.activity.equals(c.activity)) {
+							int i = 1;
+							if (so.preActivity.size() == 1) {
+								System.out.println("  Boolean preIsFinish");
+								preActivity = true;
+								counts = 1;
+							} else if (so.preActivity.size() > 1) {
+								while (i <= so.preActivity.size()) {
+									System.out.println("  Boolean preIsFinish" + i + ";");
+									i++;
+								}
+								preActivity = true;
+								counts = i - 1;
+							}
+						}
+					}
+				}
+			}
+			/*declare end flag of activity*/
+			System.out.println("  Boolean isFinish;");
+			
+			/*algorithm section*/
+			System.out.println("algorithm");
+			writer.write("algorithm" + "\r\n");            
+			
+			if(preActivity){
+				System.out.println("when preIsFinish then");
+				writer.write("when preIsFinish then"+ "\r\n");
+				System.out.println("  Time := time;");
+				writer.write("  Time := time;"+ "\r\n");
+				System.out.println("end when");
+				writer.write("end when"+ "\r\n");
+			}
+			
+			System.out.println("for i in 1:50 loop");
+			writer.write("for i in 1:50 loop" + "\r\n");
+			
+			int index1 = timerNode.name.indexOf("(");
+			int index2 = timerNode.name.indexOf(")");
+			String interval = timerNode.name.substring(index1 + 1, index2);
+			
+			System.out.println("  when time > Time + (i - 1) * " + interval + " and time <= Time + i * " + interval + " then");
+			writer.write("  when time > Time + (i - 1) * dt and time <= Time + i * dt then" + "\r\n");
+			
+			System.out.println("    x[i] := ovSig;");
+			writer.write("    x[i] := ovSig;" + "\r\n");
+			
+			System.out.println("    if x[i] == 1 then");
+			writer.write("    if x[i] == 1 then" + "\r\n");
+			
+			System.out.println("      if first == 0 then");
+			writer.write("       if first == 0 then" + "\r\n");
+			
+			System.out.println("       first := i;");
+			writer.write("         first := i;" + "\r\n");
+			
+			System.out.println("     end if;");
+			writer.write("     end if;" + "\r\n");
+			
+			System.out.println("      n := n + 1;");
+			writer.write("      n := n + 1;" + "\r\n");
+			
+			System.out.println("      last := i;");
+			writer.write("      last := i;" + "\r\n");
+			
+			System.out.println("    end if;");
+			writer.write("    end if;" + "\r\n");
+			
+			System.out.println("    if i - first + 1 >= 5 and n < 3 then");
+			writer.write("    if i - first + 1 >= 5 and n < 3 then" + "\r\n");
+			
+			System.out.println("      first := last;");
+			writer.write("      first := last;" + "\r\n");
+			
+			System.out.println("      n := 1;");
+			writer.write("      n := 1;" + "\r\n");
+			
+			System.out.println("    end if;");
+			writer.write("    end if;" + "\r\n");
+			
+			System.out.println("    if i - first + 1 <= 5 and n >= 3 then");
+			writer.write("    if i - first + 1 <= 5 and n >= 3 then" + "\r\n");
+			
+			System.out.println("      OvSignal := true;");
+			writer.write("      OvSignal := true;" + "\r\n");
+			
+			System.out.println("      isFinish := true;");
+			writer.write("      isFinish := true;" + "\r\n");
+			
+			System.out.println("    end if;");
+			writer.write("    end if;" + "\r\n");
+			
+			System.out.println("  end when");
+			writer.write("  end when" + "\r\n");
+			
+			System.out.println("end for");
+			writer.write("end for" + "\r\n");
+			
+			System.out.println("end " + ap.classname + ";");
+			writer.write("end " + ap.classname + ";" + "\r\n");
+			writer.flush();
+			writer.close();
+
+		}
+		return fileName;
+	}
+	
+	public static Node findTimerNode(ArrayList<Node> nodes){
+		Node node = new Node(); 
+		for(Node n:nodes){
+			if(n.type.equals("AcceptEventTimer")){
+				node = n;
+				break;
+			}
+		}
+		return node;		
+	}
+}

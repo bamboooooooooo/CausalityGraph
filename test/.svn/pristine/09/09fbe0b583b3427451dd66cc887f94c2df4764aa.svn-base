@@ -1,0 +1,88 @@
+package Function;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import Object.Chart;
+import Object.NNode;
+import UI.Display;
+
+public class GetNNodeType {
+	public String GetNType(String name) {
+		String type = null;
+		NNode node = new NNode();
+		List<Chart> cha1 = new Display().cha1;
+		List<Chart> cha2 = new Display().cha2;
+		List<Chart> cha = new ArrayList();
+		cha.addAll(cha1);
+		cha.addAll(cha2);
+		for (Chart c : cha)
+			for (NNode n : c.getNode()) {
+				int a = 0;
+				if (n.getType().equals("uml:DecisionNode") || n.getType().equals("uml:AcceptEventTimerAction")) {
+					String n1 = new GetTableName().GetNNodeName(n);
+					if (n1.equals(name)) {
+						node = n;
+						a = 1;
+						break;
+					}
+				}
+				if (a == 1)
+					break;
+			}
+		if (node != null) {
+			if (node.getType().equals("uml:AcceptEventTimerAction"))
+				type = "Num";
+			else {
+				String E1 = null;
+				String E2 = null;
+				String op = null;
+				String[] exp = new E1opE2().GetE1opE2(node.getName());
+				E1 = exp[0];
+				E2 = exp[2];
+				op = exp[1];
+				if (new E1opE2().isNumeric(E2))
+					type = "Num";
+				else
+					type = "Bool";
+			}
+		}
+		return type;
+	}
+	public String GetNType1(String name,List<Chart> cha) {
+		String type = null;
+		NNode node = new NNode();
+		for (Chart c : cha)
+			for (NNode n : c.getNode()) {
+				int a = 0;
+				if (n.getType().equals("uml:DecisionNode") || n.getType().equals("uml:AcceptEventTimerAction")) {
+					String n1 = new GetTableName().GetNNodeName(n);
+					if (n1.equals(name)) {
+						node = n;
+						a = 1;
+						break;
+					}
+				}
+				if (a == 1)
+					break;
+			}
+		if (node != null) {
+			if (node.getType().equals("uml:AcceptEventTimerAction"))
+				type = "Num";
+			else {
+				String E1 = null;
+				String E2 = null;
+				String op = null;
+				String[] exp = new E1opE2().GetE1opE2(node.getName());
+				E1 = exp[0];
+				E2 = exp[2];
+				op = exp[1];
+				if (new E1opE2().isNumeric(E2))
+					type = "Num";
+				else
+					type = "Bool";
+			}
+		}
+		return type;
+	}
+}

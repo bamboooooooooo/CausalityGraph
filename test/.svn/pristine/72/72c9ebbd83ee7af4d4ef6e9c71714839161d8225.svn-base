@@ -1,0 +1,33 @@
+package object;
+
+import java.io.Serializable;
+
+public class P_Keys implements Serializable{
+	NNode node;
+	String bool;
+	String value;
+	public P_Keys() {
+		this.node=new NNode();
+		this.bool=null;
+		this.value=null;
+	}
+	public NNode getNode() {
+		return node;
+	}
+	public void setNode(NNode node) {
+		this.node = node;
+	}
+	
+	public String getBool() {
+		return bool;
+	}
+	public void setBool(String bool) {
+		this.bool = bool;
+	}
+	public String getValue() {
+		return value;
+	}
+	public void setValue(String value) {
+		this.value = value;
+	}
+}

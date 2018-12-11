@@ -1,0 +1,7 @@
+package type;
+
+public class ActivityParameter {
+	public String name;
+	public String classname;
+	public String id;
+}

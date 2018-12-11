@@ -1,0 +1,17 @@
+model ParachuteSystem
+  BParachuteSys bparachuteSys;
+  CalOne co;
+  CalTwo ct;
+  EmergencySys emergencySys;
+  MParachuteSys mparachuteSys;
+  StateMonitorSys stateMonitorSys;
+  SeparationSys separationSys;
+  ParachuteSystem null;
+  ParachuteSystem null;
+  GNC gnc;
+  OverloadController oc;
+  Radar radar;
+  RemoteSensor rs;
+equation
+  null.preIsFinish= emergencySys.isFinish;
+end ParachuteSystem;

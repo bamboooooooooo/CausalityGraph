@@ -1,0 +1,24 @@
+package Function;
+
+import java.io.File;
+import java.io.IOException;
+
+public class OpenModelica {
+
+	public static void main(String[] args) {
+		new OpenModelica().run();
+	}
+
+	public void run() {
+		Runtime rt = Runtime.getRuntime();
+		String s = "D:/OpenModelica1.9.7/bin/omc.exe D:/PathData/basicpath.mos";
+		try {
+			Process proc=rt.exec(s);
+			proc.waitFor();
+			proc.destroy();
+		} catch (IOException | InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+}

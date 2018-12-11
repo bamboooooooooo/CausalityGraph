@@ -1,0 +1,322 @@
+package UI;
+
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
+
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+
+import function.XZFX_F;
+import object.Text;
+
+public class XZFX extends JFrame {
+
+	private JPanel contentPane;
+	private JTextField txt;
+	private JTextField textField;
+	private JTextField textField_1;
+	private JTextField textField_2;
+	private JTextField textField_3;
+	private JTextField txtSdf;
+	private JTable table;
+	List<Text> t = new ArrayList();
+	Vector vData = new Vector();
+	Vector vName = new Vector();
+	int No = 1;
+
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					XZFX frame = new XZFX();
+					frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the frame.
+	 */
+	public XZFX() {
+		setBounds(100, 100, 735, 459);
+		contentPane = new JPanel();
+		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		setContentPane(contentPane);
+
+		txtSdf = new JTextField();
+		txtSdf.setColumns(10);
+
+		JLabel label = new JLabel("\u6A21\u72481\uFF1A\u7CFB\u7EDF\u53D1\u51FA\u4FE1\u53F7");
+		// 系统发出信号1和信号2
+		JButton button = new JButton("\u6DFB\u52A0");
+		button.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				String name1 = txtSdf.getText().trim();
+				String name2 = textField.getText().trim();
+				Text tmp = new Text();
+				tmp.setT1(name1);
+				tmp.setT2(name2);
+				tmp.setType("1");
+				tmp.setNo(Integer.toString(No));
+				t.add(tmp);
+				String s = "模版2：系统发出信号" + name1 + "和信号" + name2;
+				Vector vRow = new Vector();
+				vRow.add(No);
+				vRow.add(s);
+				No++;
+				vData.add(vRow.clone());
+				DefaultTableModel model = new DefaultTableModel(vData, vName);
+				table.setModel(model);
+				table.getColumnModel().getColumn(0).setPreferredWidth(100);
+				table.getColumnModel().getColumn(1).setPreferredWidth(550);
+				/*
+				 * String s = "性质：系统发出" + name1 + "信号和" + name2 +
+				 * "\n不符合性质数据:\n"; for (String s1 : res) { s = s + "第" + s1 +
+				 * "条数据\n"; } textArea.setText(s);
+				 */
+			}
+		});
+
+		JScrollPane scrollPane = new JScrollPane();
+
+		JLabel label_1 = new JLabel("\u6A21\u72483:");
+
+		txt = new JTextField();
+		txt.setColumns(10);
+		// 性质3
+		JButton button_1 = new JButton("\u6DFB\u52A0");
+		button_1.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				String name1 = txt.getText().trim();
+				String name2 = textField_3.getText().trim();
+				Text tmp = new Text();
+				tmp.setT1(name1);
+				tmp.setT2(name2);
+				tmp.setType("3");
+				tmp.setNo(Integer.toString(No));
+				t.add(tmp);
+				String s = "模版3：系统发出信号" + name1 + "后，一定发出信号" + name2;
+				Vector vRow = new Vector();
+				vRow.add(No);
+				vRow.add(s);
+				No++;
+				vData.add(vRow.clone());
+				DefaultTableModel model = new DefaultTableModel(vData, vName);
+				table.setModel(model);
+				table.getColumnModel().getColumn(0).setPreferredWidth(100);
+				table.getColumnModel().getColumn(1).setPreferredWidth(550);
+			}
+		});
+
+		JLabel label_3 = new JLabel("\u548C");
+
+		textField = new JTextField();
+		textField.setColumns(10);
+
+		JLabel label_2 = new JLabel("\u6A21\u72482\uFF1A\u7CFB\u7EDF\u53D1\u51FA\u4FE1\u53F7");
+
+		textField_1 = new JTextField();
+		textField_1.setColumns(10);
+
+		textField_2 = new JTextField();
+		textField_2.setColumns(10);
+
+		JLabel label_4 = new JLabel("\u6216");
+		// 发出信号1或信号2
+		JButton button_2 = new JButton("\u6DFB\u52A0");
+		button_2.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				String name1 = textField_1.getText().trim();
+				String name2 = textField_2.getText().trim();
+				Text tmp = new Text();
+				tmp.setT1(name1);
+				tmp.setT2(name2);
+				tmp.setType("2");
+				tmp.setNo(Integer.toString(No));
+				t.add(tmp);
+				String s = "模版1：系统发出信号" + name1 + "或信号" + name2;
+				Vector vRow = new Vector();
+				vRow.add(No);
+				vRow.add(s);
+				No++;
+				vData.add(vRow.clone());
+				DefaultTableModel model = new DefaultTableModel(vData, vName);
+				table.setModel(model);
+				table.getColumnModel().getColumn(0).setPreferredWidth(100);
+				table.getColumnModel().getColumn(1).setPreferredWidth(550);
+				/*
+				 * String s = "性质：系统发出" + name1 + "信号或" + name2 +
+				 * "\n不符合性质数据:\n"; for (String s1 : res) { s = s + "第" + s1 +
+				 * "条数据\n"; }textArea.setText(s);
+				 */ }
+		});
+
+		JLabel lblopencmd = new JLabel(" \u4FE1\u53F7\u53D1\u51FA\u540E\uFF0C\u7CFB\u7EDF\u4E00\u5B9A\u53D1\u51FA");
+
+		textField_3 = new JTextField();
+		textField_3.setColumns(10);
+
+		JLabel label_5 = new JLabel("\u6A21\u72484: \u4E1A\u52A1\u903B\u8F91\u4E00\u81F4\u6027");
+		// 业务逻辑一致性
+		JButton button_3 = new JButton("\u6DFB\u52A0");
+		button_3.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				Text tmp = new Text();
+				tmp.setT1(null);
+				tmp.setT2(null);
+				tmp.setType("4");
+				tmp.setNo(Integer.toString(No));
+				t.add(tmp);
+				String s = "模版4：SepFlag信号始终一致";
+				Vector vRow = new Vector();
+				vRow.add(No);
+				vRow.add(s);
+				No++;
+				vData.add(vRow.clone());
+				DefaultTableModel model = new DefaultTableModel(vData, vName);
+				table.setModel(model);
+				table.getColumnModel().getColumn(0).setPreferredWidth(100);
+				table.getColumnModel().getColumn(1).setPreferredWidth(550);
+			}
+		});
+		// 单条检测
+		JButton button_4 = new JButton("\u5355\u6761\u68C0\u6D4B");
+		button_4.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				int index = table.getSelectedRow() + 1;
+				if (index != -1)
+					for (Text tmp : t) {
+						if (tmp.getNo().equals(Integer.toString(index))) {
+							try {
+								new ShowXZFX(tmp).setVisible(true);
+							} catch (NumberFormatException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							} catch (Exception e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+						}
+					}
+			}
+		});
+		GroupLayout gl_contentPane = new GroupLayout(contentPane);
+		gl_contentPane.setHorizontalGroup(gl_contentPane.createParallelGroup(Alignment.LEADING).addGroup(gl_contentPane
+				.createSequentialGroup().addContainerGap()
+				.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+						.addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 655, GroupLayout.PREFERRED_SIZE)
+						.addGroup(gl_contentPane.createSequentialGroup().addComponent(label).addGap(10)
+								.addComponent(txtSdf, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
+								.addGap(10).addComponent(label_3).addPreferredGap(ComponentPlacement.UNRELATED)
+								.addComponent(textField, 179, 179, 179).addPreferredGap(ComponentPlacement.UNRELATED)
+								.addComponent(button, GroupLayout.PREFERRED_SIZE, 75, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_contentPane.createSequentialGroup()
+								.addComponent(label_2, GroupLayout.PREFERRED_SIZE, 134, GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.UNRELATED)
+								.addComponent(textField_1, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(label_4, GroupLayout.PREFERRED_SIZE, 18, GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(textField_2, 158, 158, 158)
+								.addPreferredGap(ComponentPlacement.UNRELATED)
+								.addComponent(button_2, GroupLayout.PREFERRED_SIZE, 75, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_contentPane.createSequentialGroup().addGroup(gl_contentPane
+								.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_contentPane.createSequentialGroup()
+										.addComponent(label_1, GroupLayout.PREFERRED_SIZE, 36,
+												GroupLayout.PREFERRED_SIZE)
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addComponent(txt, GroupLayout.PREFERRED_SIZE, 107, GroupLayout.PREFERRED_SIZE)
+										.addPreferredGap(ComponentPlacement.RELATED).addComponent(lblopencmd,
+												GroupLayout.PREFERRED_SIZE, 165, GroupLayout.PREFERRED_SIZE))
+								.addGroup(gl_contentPane.createSequentialGroup()
+										.addComponent(label_5, GroupLayout.PREFERRED_SIZE, 137,
+												GroupLayout.PREFERRED_SIZE)
+										.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(button_3)))
+								.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+										.addGroup(gl_contentPane.createSequentialGroup()
+												.addPreferredGap(ComponentPlacement.RELATED)
+												.addComponent(textField_3, GroupLayout.PREFERRED_SIZE, 129,
+														GroupLayout.PREFERRED_SIZE)
+												.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(button_1,
+														GroupLayout.PREFERRED_SIZE, 75, GroupLayout.PREFERRED_SIZE))
+										.addGroup(gl_contentPane.createSequentialGroup().addGap(22)
+												.addComponent(button_4)))))
+				.addContainerGap(44, Short.MAX_VALUE)));
+		gl_contentPane
+				.setVerticalGroup(
+						gl_contentPane.createParallelGroup(Alignment.LEADING).addGroup(gl_contentPane
+								.createSequentialGroup().addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
+										.addComponent(txtSdf, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+												GroupLayout.PREFERRED_SIZE)
+										.addComponent(label).addComponent(label_3).addComponent(button)
+										.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+												GroupLayout.PREFERRED_SIZE))
+								.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING).addGroup(gl_contentPane
+										.createSequentialGroup().addPreferredGap(ComponentPlacement.RELATED)
+										.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+												.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
+														.addComponent(label_4)
+														.addComponent(textField_2, GroupLayout.PREFERRED_SIZE,
+																GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+														.addComponent(textField_1, GroupLayout.PREFERRED_SIZE,
+																GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+												.addComponent(button_2)))
+										.addGroup(
+												gl_contentPane.createSequentialGroup().addGap(9).addComponent(label_2)))
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE).addComponent(label_1)
+										.addComponent(lblopencmd)
+										.addComponent(txt, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+												GroupLayout.PREFERRED_SIZE)
+										.addComponent(textField_3, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+												GroupLayout.PREFERRED_SIZE)
+										.addComponent(button_1))
+								.addPreferredGap(ComponentPlacement.UNRELATED)
+								.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+										.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
+												.addComponent(label_5).addComponent(button_3))
+										.addComponent(button_4))
+								.addPreferredGap(ComponentPlacement.RELATED, 10, Short.MAX_VALUE)
+								.addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 276, GroupLayout.PREFERRED_SIZE)
+								.addContainerGap()));
+
+		table = new JTable();
+		table.setOpaque(false);
+		table.setBackground(Color.WHITE);
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		vName.add("No");
+		vName.add("模版内容");
+		DefaultTableModel model = new DefaultTableModel(vData, vName);
+		table.setModel(model);
+		table.getColumnModel().getColumn(0).setPreferredWidth(100);
+		table.getColumnModel().getColumn(1).setPreferredWidth(550);
+		scrollPane.setViewportView(table);
+		contentPane.setLayout(gl_contentPane);
+	}
+}

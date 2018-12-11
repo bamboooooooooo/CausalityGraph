@@ -1,0 +1,101 @@
+package function;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import object.Edge;
+import object.NNode;
+
+import org.dom4j.Attribute;
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+public class Dom4JforXML {
+	public List<NNode> list2;  //存储所有节点
+	public List<Edge> list3;   //存储所有边
+	public List<NNode> list4; // 存储决定节点
+
+	public void iterator() {
+		list2 = new ArrayList();
+		list3 = new ArrayList();
+		list4 = new ArrayList();
+	}
+
+	public void findnodes(String path) throws Exception {
+		SAXReader reader = new SAXReader();
+		Document document = reader.read(new File(path));
+		Element root = document.getRootElement();
+		listNodes(root);
+	}
+
+	public void listNodes(Element node) {
+		if (node.getName() == "node") {
+			NNode newnode = new NNode();
+			List<Attribute> list = node.attributes();
+			for (Attribute attribute : list) {
+				if (attribute.getName() == "type") {
+					newnode.setType(attribute.getValue());
+				}
+				if (attribute.getName() == "id") {
+					newnode.setId(attribute.getValue());
+				}
+				if (attribute.getName() == "name") {
+					newnode.setName(attribute.getValue());
+				}
+			}
+			List<Element> list1 = node.elements();
+			String[] incoming = new String[4];
+			String[] outgoing = new String[4];
+			int i = 0;
+			int j = 0;
+			for (Element ele : list1) {
+				if (ele.getName().equals("incoming")) {
+					incoming[i++] = ele.attributeValue("idref");
+				}
+				if (ele.getName().equals("outgoing")) {
+					outgoing[j++] = ele.attributeValue("idref");
+				}
+			}
+			newnode.setInIdref(incoming);
+			newnode.setOutIdref(outgoing);
+			list2.add(newnode);
+			if (newnode.getType().equals("uml:DecisionNode"))
+				list4.add(newnode);
+		}
+		if (node.getName() == "edge") {
+			Edge edge = new Edge();
+			List<Attribute> list = node.attributes();
+			List<Element> list1 = node.elements();
+			for (Attribute attribute : list) {
+				if (attribute.getName() == "type") {
+					edge.setType(attribute.getValue());
+				}
+				if (attribute.getName() == "source") {
+					edge.setSource(attribute.getValue());
+				}
+				if (attribute.getName() == "target") {
+					edge.setTarget(attribute.getValue());
+				}
+				if (attribute.getName() == "id") {
+					edge.setId(attribute.getValue());
+				}
+			}
+			for (Element ele : list1) {
+				if(ele.getName().equals("guard")){
+					edge.setBool(ele.attributeValue("body"));
+				}
+			}
+			list3.add(edge);
+		}
+		Iterator<Element> iterator = node.elementIterator();//遍历xml中每一条边
+		while (iterator.hasNext()) {
+			Element e = iterator.next();
+			if (e.getName() == "group") //跳过name为"group"的边
+				continue;
+			listNodes(e);
+		}
+	}
+}

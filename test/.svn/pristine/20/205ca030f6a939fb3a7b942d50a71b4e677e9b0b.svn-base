@@ -1,0 +1,30 @@
+package type;
+
+import java.util.ArrayList;
+
+public class Transition {
+	public String id;
+	public String source;
+	public String target;
+	public String guard;
+	public String type;
+	
+	
+	public Node findTargetNode(ArrayList<Node> nodes, String target){
+		Node targetNode = new Node();
+		for(Node node: nodes){
+			if(node.id.equals(target)){
+				targetNode = node;
+			}
+		}
+		return targetNode;}
+	
+	public Node findSourceNode(ArrayList<Node> nodes, String source){
+		Node sourceNode = new Node();
+		for(Node node: nodes){
+			if(node.id.equals(source)){
+				sourceNode = node;
+			}
+		}
+		return sourceNode;}
+}

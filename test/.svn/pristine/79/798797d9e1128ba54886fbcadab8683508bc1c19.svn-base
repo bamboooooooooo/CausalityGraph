@@ -1,0 +1,30 @@
+package Function;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.util.List;
+
+public class CreateTxt {
+	public void createtxt(List<String> d,List<String> v) {
+		try {
+			File newFile = new File("D:/PathData/Modelica/Data.txt");
+			if (!newFile.exists())
+				newFile.createNewFile();
+			else {
+				newFile.delete();
+				newFile.createNewFile();
+			}
+			FileWriter fw = null;
+			fw = new FileWriter(newFile);
+			String s = "";
+			for(int i = 0;i<v.size();i++)
+					s=s+v.get(i)+"="+d.get(i+1)+"\r\n";
+			fw.write(s);
+			fw.flush();
+			fw.close();
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+}

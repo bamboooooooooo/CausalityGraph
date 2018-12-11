@@ -1,0 +1,35 @@
+package Function;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import Object.Chart;
+import Object.Keys;
+import Object.NNode;
+import Object.T_Keys;
+
+public class Dependency {
+	public List<T_Keys> Dependency(List<Keys> k, List<Chart> c1, List<Chart> c2) { // k是依赖关系，c1是内部XMI,c2是外部XMI
+		List<T_Keys> list = new ArrayList();
+		for (Keys t : k) {
+			if (t.getTwo().getType().equals("uml:AcceptEventTimerAction")) {
+				List<NNode> dec = new ArrayList();
+				for (Chart cha : c1) {
+					if (t.getOne().getChart().equals(cha.getChart())) {
+						new Rely().save = new ArrayList(); // 初始化用于记录访问过的节点，防止循环的变量
+						dec = new Rely().F_Decsion(t.getOne(), cha, c1,c2);
+						if (dec.size() != 0) {
+							dec.add(t.getTwo());
+							T_Keys a = new T_Keys();
+							a.setOne(t.getOne());
+							a.setTwo(dec);
+							list.add(a);
+							break;
+						}
+					}
+				}
+			}
+		}
+		return list;
+	}
+}

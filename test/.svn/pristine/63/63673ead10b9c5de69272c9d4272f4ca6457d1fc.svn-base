@@ -1,0 +1,324 @@
+package main;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.util.ArrayList;
+import java.util.List;
+
+import function.GetTableName;
+import object.TableData;
+import type.ActivityPartition;
+import type.Block;
+import type.Comment;
+import type.Correspondence;
+import type.SAAction;
+import type.SequenceOrder;
+
+public class SystemModel {
+	public static void main(String[] args) throws Exception {
+		// TODO Auto-generated method stub
+		ArrayList<String> files1 = new ArrayList<String>();
+		ArrayList<String> files2 = new ArrayList<String>();
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\EmergencySys.xml");
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\SeparationSys.xml");
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\MParachuteSys.xml");
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\BParachuteSys.xml");
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\CalOne.xml");
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\CalTwo.xml");
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\StateMonitorSys.xml");
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\OverloadController.xml");
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\Radar.xml");
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\RemoteSensor.xml");
+		files1.add("C:\\Users\\wen\\Desktop\\XMI\\Components\\GNC.xml");
+		generateSystemModel("C:\\Users\\wen\\Desktop\\XMI\\SystemComposition.xml","C:\\Users\\wen\\Desktop\\XMI\\SystemContext.xml",files1,"C:\\Users\\wen\\Desktop\\XMI\\SystemActivity.xml");
+		/*generateSystemModel("","",
+				files1,"");*/
+	}
+	
+	static String generateSystemModel(String bddFilePath, String ibdFilePath, ArrayList<String> actFilePaths, String sysActivityFile) throws Exception {
+		String filePath = ""; //文件的路径
+        //declare component
+		ArrayList<Block> blocks = BDDXMI.parseSystemComposition(bddFilePath);
+		Block rootBlock = findRootBlock(blocks);
+		//写入文件
+		if(actFilePaths.size() == 1){
+			filePath = "modelicamodels/mo/system.mo";
+		}
+		else{
+			filePath = "modelicamodels/mo/" + rootBlock.blockName + ".mo";
+		}		
+		File file = new File(filePath);
+		file.createNewFile();
+		BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+		//系统模型开始
+		if(actFilePaths.size() == 1){    /*single component*/
+			System.out.println("model System");
+			writer.write("model System" + "\r\n");
+			ArrayList<ActivityPartition> aps = ActXMI.parseActivityPartition(actFilePaths.get(0));
+			for(ActivityPartition ap:aps){
+				System.out.println("  "+ ap.classname + " " + ap.classname.toLowerCase() + ";");
+				writer.write("  "+ ap.classname + " " + ap.classname.toLowerCase() + ";" + "\r\n");
+			}
+		}else{
+			System.out.println("model " + rootBlock.blockName);
+			writer.write("model " + rootBlock.blockName + "\r\n");
+		}
+		/*--------parameter model----------*/
+		System.out.println("  Pars p;");
+		writer.write("  Pars p;" + "\r\n");
+		/*---------internal components------------*/
+		for(Block b:blocks){
+			if(!b.id.equals(rootBlock.id)){
+				System.out.println("  " + b.blockName + " " + b.role + ";");
+				writer.write("  " + b.blockName + " " + b.role + ";" + "\r\n");
+			}		
+		}
+		/*--------external components----------*/
+		ArrayList<Block> externalComponents = IBDXMI.parseSystemContext(ibdFilePath);
+		for(Block b:externalComponents){
+			if(!b.blockName.equals(rootBlock.blockName)){
+				System.out.println("  " + b.blockName + " " + b.role + ";");
+				writer.write("  " + b.blockName + " " + b.role + ";" + "\r\n");
+			}			
+		}
+		/*--------------equation section-------------*/
+		System.out.println("equation");
+		writer.write("equation" + "\r\n");
+		/*-------------parameters binding------------*/
+		if(actFilePaths.size() == 1){
+			ArrayList<String> externalActFiles = new ArrayList<String>();
+			ArrayList<ActivityPartition> aps = ActXMI.parseActivityPartition(actFilePaths.get(0));
+			String componentRole = aps.get(0).classname.toLowerCase();
+			List<TableData> parameters = GetTableName.GTName(actFilePaths,externalActFiles);
+			for(TableData par:parameters){
+				System.out.println("  " + componentRole + "." + par.getName() + "= p." + par.getName() + ";");
+				writer.write("  " + componentRole + "." + par.getName() + "= p." + par.getName() + ";" + "\r\n");
+			}
+		}else{
+			ArrayList<String> internalActFiles = new ArrayList<String>();
+			ArrayList<String> externalActFiles = new ArrayList<String>();
+			for (String actFile : actFilePaths) {
+				ArrayList<ActivityPartition> aps = ActXMI.parseActivityPartition(actFile);
+				for (ActivityPartition ap : aps) {
+					Boolean isExternal = false;
+					for (Block component : externalComponents) {
+						if (ap.classname.equals(component.blockName)) {
+							externalActFiles.add(actFile);
+							isExternal = true;
+							break;
+						}
+					}
+					if (!ap.classname.equals("StateMonitorSys") && !isExternal) {
+						internalActFiles.add(actFile);
+						break;
+					}
+
+				}
+			}
+			List<TableData> parameters = GetTableName.GTName(internalActFiles, externalActFiles);
+			for (TableData par : parameters) {
+				for (Block b : blocks) {
+					if (b.blockName.equals(par.getChart())) {
+						System.out.println("  " + b.role + "." + par.getName() + "= p." + par.getName() + ";");
+						writer.write("  " + b.role + "." + par.getName() + "= p." + par.getName() + ";" + "\r\n");
+						break;
+					}
+				}
+				for (Block b : externalComponents) {
+					if (b.blockName.equals(par.getChart())) {
+						if (par.getName().contains("Time")) {
+							System.out.println("  " + b.role + "." + par.getName() + "= p." + par.getName() + ";");
+							writer.write("  " + b.role + "." + par.getName() + "= p." + par.getName() + ";" + "\r\n");
+						} else {
+							String upper;
+							if (par.getName().contains("[")) {
+								int index = par.getName().indexOf("[");
+								upper = par.getName().substring(0, index).toUpperCase();
+								System.out.println("  " + b.role + "." + upper + "[:] = p." + par.getName() + ";");
+								writer.write("  " + b.role + "." + upper + "[:] = p." + par.getName() + ";" + "\r\n");
+							} else {
+								upper = par.getName().toUpperCase();
+								System.out.println("  " + b.role + "." + upper + " = p." + par.getName() + ";");
+								writer.write("  " + b.role + "." + upper + "= p." + par.getName() + ";" + "\r\n");
+							}
+						}
+						break;
+					}
+				}
+			}
+		}
+						
+		
+		//SendSignalAction, AcceptEventAction Binding
+		ArrayList<SAAction> ssActions = ActXMI.parseSendSignalAction(actFilePaths);
+		ArrayList<SAAction> seActions = ActXMI.parseAcceptEventAction(actFilePaths);
+		ArrayList<Block> ownerBlocks = new ArrayList<Block>();
+		ownerBlocks.addAll(blocks);
+		ownerBlocks.addAll(externalComponents);
+		ssActions = changeOwner(ssActions,ownerBlocks);
+		seActions = changeOwner(seActions,ownerBlocks);
+		
+		for(SAAction se:seActions){
+			for(SAAction ss:ssActions){
+				if(se.name.equals(ss.name)){
+					System.out.println("  " + se.owner +"." + se.name + " =" + ss.owner +"." + ss.name + ";");
+					writer.write("  " + se.owner +"." + se.name + " =" + ss.owner +"." + ss.name + ";" + "\r\n");
+				}
+			}
+		}
+		//Sequential order
+		ArrayList<Correspondence> correspondences = ActXMI.parsePACorrespondence(actFilePaths);
+		ArrayList<SequenceOrder> sequenceOrders = ActXMI.parseSequenceOrder(sysActivityFile);
+		correspondences = addRole(correspondences,ownerBlocks);
+		sequenceOrders = addRoleOfAct(sequenceOrders,correspondences);
+		for(SequenceOrder so:sequenceOrders){
+			if(so.preActivityRole.size()>1){
+				int i = 1;
+			    for(String pre:so.preActivityRole){			
+			    	System.out.println("  " + so.activityRole + ".preIsFinish" + i + "= " + pre + ".isFinish;");
+			    	writer.write("  " + so.activityRole + ".preIsFinish" + i + "= " + pre + ".isFinish;" + "\r\n");
+			    	i++;
+			    }
+			}else if(so.preActivityRole.size()==1){
+				System.out.println("  " + so.activityRole + ".preIsFinish"  + "= " + so.preActivityRole.get(0) + ".isFinish;");
+				writer.write("  " + so.activityRole + ".preIsFinish"  + "= " + so.preActivityRole.get(0) + ".isFinish;" + "\r\n");
+			}
+			
+		}
+		/*sequential order of external component*/
+		for(String actFile:actFilePaths){
+			Comment comment = ActXMI.parseComment(actFile);
+			if(comment.body !=null && comment.body.contains("preActivity")){
+				ArrayList<Block> components = new ArrayList<Block>();
+				components.addAll(externalComponents);
+				components.addAll(blocks);
+				int index = comment.body.indexOf(":");
+				String preActName = comment.body.substring(index+1);
+				String preActRole = getRoleOfComponent(components,preActName);
+				ArrayList<ActivityPartition> aps = ActXMI.parseActivityPartition(actFile);
+				for(ActivityPartition ap:aps){
+					String apRole = getRoleOfComponent(components,ap.classname);
+					System.out.println("  "+ apRole + ".preIsFinish = " + preActRole + ".isFinish;");
+					writer.write("  "+ apRole + ".preIsFinish = " + preActRole + ".isFinish;" + "\r\n");
+				}
+			}
+		}
+		
+		/*-----------End of system model----------*/
+		if(actFilePaths.size() == 1){
+			System.out.println("end System;");
+			writer.write("end System;" + "\r\n");
+		}else{
+			System.out.println("end " + rootBlock.blockName + ";");	
+			writer.write("end " + rootBlock.blockName + ";" + "\r\n");
+		}
+		
+		writer.flush();
+		writer.close();
+		return filePath;
+	}
+	//find root block of system
+	static Block findRootBlock(ArrayList<Block> blocks){
+		Block rootBlock = new Block();
+		for(Block b:blocks){
+			if (b.isRoot){
+				rootBlock = b;
+				break;
+			}
+		}
+		return rootBlock;		
+	}
+	//change the owner of SendSignalAction and AcceptEventAction
+	static ArrayList<SAAction> changeOwner(ArrayList<SAAction> actions, ArrayList<Block> blocks){
+		ArrayList<SAAction> changedActions = new ArrayList<SAAction>();
+		for(SAAction a:actions){
+			for(Block b:blocks){
+				if(a.owner.equals(b.blockName)){
+					a.owner = b.role;
+					break;
+				}
+			}
+			changedActions.add(a);
+		}
+		
+		return changedActions;		
+	}
+	//add role of partition
+	static ArrayList<Correspondence> addRole(ArrayList<Correspondence> correspondences, ArrayList<Block> blocks){
+		ArrayList<Correspondence> changedcorrespondences = new ArrayList<Correspondence>();
+		for(Correspondence c:correspondences){
+			for(Block b:blocks){
+				if(c.partition.equals(b.blockName)){
+					c.role = b.role;
+					break;
+				}
+			}
+			changedcorrespondences.add(c);
+		}
+		
+		return changedcorrespondences;		
+	}
+	//add role of activity and preActivity
+	static ArrayList<SequenceOrder> addRoleOfAct(ArrayList<SequenceOrder> sequenceOrders, ArrayList<Correspondence> changedcorrespondences){
+		ArrayList<SequenceOrder> changedSequenceOrders = new ArrayList<SequenceOrder>();
+		for(SequenceOrder so:sequenceOrders){
+			for(Correspondence c:changedcorrespondences){
+				if(c.activity.equals(so.activity)){
+					so.activityRole = c.role;
+					break;
+				}
+			}
+			for(String pre:so.preActivity){
+				for(Correspondence c:changedcorrespondences){
+					if(c.activity.equals(pre)){
+						so.preActivityRole.add(c.role);
+						break;
+					}
+				}
+			}
+		  changedSequenceOrders.add(so);
+		}			
+		return changedSequenceOrders;
+	}
+	
+	//get all internal component names
+	static ArrayList<String> getAllComponentNames(ArrayList<String> coActFiles) throws Exception{
+		ArrayList<String> components = new ArrayList<String>();
+		//add component name
+				for(String actFile:coActFiles){
+					ArrayList<ActivityPartition> aps = new ArrayList<ActivityPartition>();
+					aps = ActXMI.parseActivityPartition(actFile);
+					for(ActivityPartition ap:aps){
+						components.add(ap.classname);
+					}
+				}
+		return components;		
+	}
+	
+	//get all external component names
+		static ArrayList<String> getAllExternalObjectNames(ArrayList<String> eoActFiles) throws Exception{
+			ArrayList<String> externalComponents = new ArrayList<String>();
+			//add component name
+					for(String actFile:eoActFiles){
+						ArrayList<ActivityPartition> aps = new ArrayList<ActivityPartition>();
+						aps = ActXMI.parseActivityPartition(actFile);
+						for(ActivityPartition ap:aps){
+							externalComponents.add(ap.classname);
+						}
+					}
+			return externalComponents;		
+		}
+		
+	//get role of component
+		static String getRoleOfComponent(ArrayList<Block> blocks, String name){
+			String role = null;
+			for(Block b:blocks){
+				if(b.blockName.equals(name)){
+					role = b.role;
+					break;
+				}
+			}
+			return role;
+		}
+}

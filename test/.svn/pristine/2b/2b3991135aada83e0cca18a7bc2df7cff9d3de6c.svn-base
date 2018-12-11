@@ -1,0 +1,45 @@
+package function;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import object.Chart;
+import object.NNode;
+
+public class DecNodeType {
+	public String GetTypeOfDecNode(NNode n, Chart cha) {
+		String type = "3";  //3表示全局变量
+		String name = new GetName().varname(n);
+		for (NNode t : cha.getNode()) {
+			if (t.getType().equals("uml:AcceptEventAction") && t.getName().equals(name)) {
+				type = "1"; // 1表示外部变量
+			}
+			if(t.getType().equals("uml:Action")){
+				List<String> s = Action(t.getName());
+				if(s.get(0).equals(name)){
+					if(isNumeric(s.get(1)))
+						type="2";  //2表示直接赋值
+				}
+			}
+		}
+		return type;
+	}
+	public List<String> Action(String exp){
+		List<String> s=new ArrayList();
+		int index1=exp.indexOf(":");
+		int index2=exp.indexOf("=");
+		String s1=(exp.substring(0, index1-1)).replace(" ", "");  //基本节点第一个变量
+		String s2=(exp.substring(index2+1, exp.length())).replace(" ", "");		//基本节点第二个变量
+		s.add(s1);
+		s.add(s2);
+		return s;
+	}
+	public boolean isNumeric(String str){
+		for(int i =0;i<str.length();i++)
+		{
+			if(!Character.isDigit(str.charAt(i)))
+				return false;
+		}
+		return true;
+	}
+}

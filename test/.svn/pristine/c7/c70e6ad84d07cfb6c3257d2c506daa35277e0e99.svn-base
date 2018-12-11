@@ -1,0 +1,285 @@
+package main;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import type.ActivityPartition;
+import type.Comment;
+import type.Correspondence;
+import type.Node;
+import type.SAAction;
+import type.SequenceOrder;
+import type.Transition;
+
+public class ActXMI {
+	public static void main(String[] args) throws Exception {
+		// TODO Auto-generated method stub
+		/*ArrayList<SequenceOrder> sos = parseSequenceOrder("C:\\Users\\wen\\Desktop\\XMI\\SystemActivity.xml"); 
+		for(SequenceOrder so:sos){
+			System.out.println(so.activity);
+		}*/
+		
+		Comment c = parseComment("C:\\Users\\wen\\Desktop\\XMI\\StateMonitorSys.xml");
+		System.out.println(c.id + c.body);
+	}
+
+	/*parse transition */
+	static ArrayList<Transition> parseTransition(String actFilePath) throws Exception {
+		SAXReader reader = new SAXReader();
+		Document document = reader.read(actFilePath);
+		ArrayList<Transition> transitions = new ArrayList<Transition>();
+		List<Element> edges = document.selectNodes("//edge");
+		for (Element e : edges) {
+			String id = e.attributeValue("id");
+			String type = e.attributeValue("type");
+			String source = e.attributeValue("source");
+			String target = e.attributeValue("target");
+			String guard;
+			Element GUARD = (Element) e.selectSingleNode(".//guard");
+			if (GUARD != null) {
+				guard = GUARD.attributeValue("body");
+			} else {
+				guard = "null";
+			}
+			Transition t = new Transition();
+			t.id = id;
+			t.source = source;
+			t.target = target;
+			t.guard = guard;
+			t.type = type;
+			transitions.add(t);
+		}
+		return transitions;
+
+	}
+
+	/*parse node */
+	static ArrayList<Node> parseNode(String actFilePath) throws Exception {
+		SAXReader reader = new SAXReader();
+		Document document = reader.read(actFilePath);
+		ArrayList<Node> nodes = new ArrayList<Node>();
+		List<Element> INPINS = document.selectNodes("//node/input");
+		List<Element> OUTPINS = document.selectNodes("//node/output");
+		List<Element> NODES = document.selectNodes("//packagedElement/node");
+		for (Element pin : INPINS) {
+			Node node = new Node();
+			node.id = pin.attributeValue("id");
+			node.type = "InputPin";
+			node.name = pin.attributeValue("name");
+			Element e = (Element) document.selectSingleNode("//element[@xmi:idref='" + node.id + "']/model");
+			node.owner = e.attributeValue("owner");
+			nodes.add(node);
+		}
+		for (Element pin : INPINS) {
+			Node node = new Node();
+			node.id = pin.attributeValue("id");
+			node.type = "OutputPin";
+			node.name = pin.attributeValue("name");
+			Element e = (Element) document.selectSingleNode("//element[@xmi:idref='" + node.id + "']/model");
+			node.owner = e.attributeValue("owner");
+			nodes.add(node);
+		}
+		for (Element n : NODES) {
+			Node node = new Node();
+			node.id = n.attributeValue("id");
+			node.owner = "null";
+			switch (n.attributeValue("type")) {
+			case "uml:Action":
+				node.type = "PrimitiveAction";
+				break;
+			case "uml:SendSignalAction":
+				node.type = "SendSignal";
+				break;
+			case "uml:AcceptEventAction":
+				node.type = "AcceptEvent";
+				break;
+			case "uml:AcceptEventTimerAction":
+				node.type = "AcceptEventTimer";
+				break;
+			case "uml:DecisionNode":
+				node.type = "Decision";
+				break;
+			case "uml:MergeNode":
+				node.type = "Merge";
+				break;
+			case "uml:ForkNode":
+				node.type = "Fork";
+				break;
+			case "uml:JoinNode":
+				node.type = "Join";
+				break;
+			case "uml:InitialNode":
+				node.type = "Initial";
+				break;
+			case "uml:FlowFinalNode":
+				node.type = "FlowFinal";
+				break;
+			case "uml:ActivityFinalNode":
+				node.type = "ActivityFinal";
+				break;
+			case "uml:ActivityParameterNode":
+				node.type = "ActivityParameter";
+				break;
+			}
+			if (n.attributeValue("name") != null) {
+				node.name = n.attributeValue("name");
+			} else {
+				node.name = "null";
+			}
+			nodes.add(node);
+		}
+		return nodes;
+	}
+
+	/*parse ActivityPartition */
+	static ArrayList<ActivityPartition> parseActivityPartition(String actFilePath) throws Exception {
+		SAXReader reader = new SAXReader();
+		Document document = reader.read(actFilePath);
+		ArrayList<ActivityPartition> aps = new ArrayList<ActivityPartition>();
+		List<Element> GROUPS = document.selectNodes("//group");
+		for (Element g : GROUPS) {
+			ActivityPartition ap = new ActivityPartition();
+			ap.id = g.attributeValue("id");
+			ap.name = g.attributeValue("name");
+			Element e = (Element) document.selectSingleNode("//element[@xmi:idref='" + ap.id + "']/properties");
+			ap.classname = e.attributeValue("stereotype");
+			aps.add(ap);
+		}
+		return aps;
+	}
+
+	/*parse comment */
+	static Comment parseComment(String actFilePath) throws Exception {
+		Comment comment = new Comment();
+		SAXReader reader = new SAXReader();
+		Document document = reader.read(actFilePath);
+		Element COMMENT = (Element) document.selectSingleNode("//packagedElement/ownedComment");
+		if (COMMENT != null) {
+			Element annotatedElement = (Element) COMMENT.selectSingleNode("./annotatedElement");
+			comment.id = COMMENT.attributeValue("id");
+			comment.body = COMMENT.attributeValue("body");
+			comment.annotatedEleId = annotatedElement.attributeValue("idref");
+		}
+		return comment;
+	}
+
+	/*get name,owner of SendSignalAction*/
+	static ArrayList<SAAction> parseSendSignalAction(ArrayList<String> actFilePaths) throws Exception {
+		ArrayList<SAAction> SSActions = new ArrayList<SAAction>();
+		for (String actFilePath : actFilePaths) {
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(actFilePath);
+			List<Element> SSACTIONS = document.selectNodes("//node[@xmi:type='uml:SendSignalAction']");
+			for (Element s : SSACTIONS) {
+				Element SSACTION = (Element) document
+						.selectSingleNode("//element[@xmi:idref='" + s.attributeValue("id") + "']");
+				Element model = (Element) SSACTION.selectSingleNode("./model");
+				Element owner = (Element) document
+						.selectSingleNode("//element[@xmi:idref='" + model.attributeValue("owner") + "']");
+				Element ownerName = (Element) owner.selectSingleNode("./properties");
+				SAAction ss = new SAAction();
+				ss.name = s.attributeValue("name");
+				ss.owner = ownerName.attributeValue("stereotype");
+				ss.type = "SendSignalAction";
+				SSActions.add(ss);
+			}
+		}
+		return removeDuplicateWithOrder(SSActions);
+	}
+
+	/*get name,owner of AcceptEventAction*/
+	static ArrayList<SAAction> parseAcceptEventAction(ArrayList<String> actFilePaths) throws Exception {
+		ArrayList<SAAction> AEActions = new ArrayList<SAAction>();
+		for (String actFilePath : actFilePaths) {
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(actFilePath);
+			List<Element> AEACTIONS = document.selectNodes("//node[@xmi:type='uml:AcceptEventAction']");
+			for (Element s : AEACTIONS) {
+				Element AEACTION = (Element) document
+						.selectSingleNode("//element[@xmi:idref='" + s.attributeValue("id") + "']");
+				Element model = (Element) AEACTION.selectSingleNode("./model");
+				Element owner = (Element) document
+						.selectSingleNode("//element[@xmi:idref='" + model.attributeValue("owner") + "']");
+				Element ownerName = (Element) owner.selectSingleNode("./properties");
+				SAAction se = new SAAction();
+				se.name = s.attributeValue("name");
+				se.owner = ownerName.attributeValue("stereotype");
+				se.type = "AcceptEventAction";
+				AEActions.add(se);
+			}
+		}
+		return removeDuplicateWithOrder(AEActions);
+	}
+
+	// remove duplicated SAAction
+	static ArrayList removeDuplicateWithOrder(ArrayList list) {
+		ArrayList newList = new ArrayList<SAAction>();
+		Iterator it = list.iterator();
+		while (it.hasNext()) {
+			Object obj = it.next();
+			if (!newList.contains(obj)) {
+				newList.add(obj);
+			}
+		}
+		return newList;
+	}
+
+	// correnspondence of patition and activity
+	static ArrayList<Correspondence> parsePACorrespondence(ArrayList<String> actFilePaths) throws DocumentException {
+		ArrayList<Correspondence> correnspondences = new ArrayList<Correspondence>();
+		for (String actFilePath : actFilePaths) {
+			Correspondence temp = new Correspondence();
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(actFilePath);
+			Element partition = (Element) document.selectSingleNode("//packagedElement[@xmi:type='uml:Stereotype']");
+			Element activity = (Element) document.selectSingleNode("//diagram//properties");
+			temp.partition = partition.attributeValue("name");
+			temp.activity = activity.attributeValue("name");
+			correnspondences.add(temp);
+		}
+		return correnspondences;
+	}
+
+	// parse SequenceOrder of system activity
+	static ArrayList<SequenceOrder> parseSequenceOrder(String actFilePath) throws DocumentException {
+		ArrayList<SequenceOrder> sequenceOrders = new ArrayList<SequenceOrder>();
+		if(actFilePath != ""){
+			SAXReader reader = new SAXReader();
+		Document document = reader.read(actFilePath);
+		List<Element> CBNodes = document.selectNodes("//node[@xmi:type='uml:CallBehaviorAction']");
+		for (Element cb : CBNodes) {
+			SequenceOrder temp = new SequenceOrder();
+			// preActivity
+			Element incoming = (Element) cb.selectSingleNode("./incoming");
+			Element edge = (Element) document
+					.selectSingleNode("//edge[@xmi:id='" + incoming.attributeValue("idref") + "']");
+			Element sourceNode = (Element) document
+					.selectSingleNode("//node[@xmi:id='" + edge.attributeValue("source") + "']");
+			if (sourceNode.attributeValue("type").equals("uml:ForkNode")) {
+				List<Element> incomings = sourceNode.selectNodes("./incoming");
+				for (Element in : incomings) {
+					Element inEdge = (Element) document
+							.selectSingleNode("//edge[@xmi:id='" + in.attributeValue("idref") + "']");
+					Element inSourceNode = (Element) document
+							.selectSingleNode("//node[@xmi:id='" + inEdge.attributeValue("source") + "']");
+					if (inSourceNode.attributeValue("type").equals("uml:CallBehaviorAction")) {
+						temp.preActivity.add(inSourceNode.attributeValue("name"));
+					}
+				}
+			} else if (sourceNode.attributeValue("type").equals("uml:CallBehaviorAction")) {
+				temp.preActivity.add(sourceNode.attributeValue("name"));
+			}
+			// activity
+			temp.activity = cb.attributeValue("name");
+			sequenceOrders.add(temp);
+		}
+		}
+		
+		return sequenceOrders;
+	}
+}

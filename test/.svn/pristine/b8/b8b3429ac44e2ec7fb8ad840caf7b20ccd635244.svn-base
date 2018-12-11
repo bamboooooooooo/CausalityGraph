@@ -1,0 +1,8 @@
+package type;
+
+public class Variable {
+	public String type;
+	public String name;
+	public Boolean isStatic; 
+	public String defaultValue;
+}

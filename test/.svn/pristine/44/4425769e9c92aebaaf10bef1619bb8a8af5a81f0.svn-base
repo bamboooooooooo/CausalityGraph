@@ -1,0 +1,333 @@
+package function;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.dom4j.DocumentException;
+
+import JDBC.JdbcUtils;
+import object.Chart;
+import object.DecNode;
+import object.Keys;
+import object.NNode;
+import object.P_Keys;
+import object.T_Keys;
+import object.TableData;
+
+public class GetTableName {
+	static List<NNode> save = new ArrayList(); // 判断当前节点是否是数组时，记录访问过的节点
+
+	public static void main(String[] args) throws DocumentException {
+		String url = "C:/Users/Z_H/Desktop/xml/内部XMI/C1.xml";
+		ArrayList<String> files1 = new ArrayList<String>();
+		ArrayList<String> files2 = new ArrayList<String>();
+		files1.add("C:/Users/Z_H/Desktop/xml/内部XMI/BP.xml");
+		files1.add("C:/Users/Z_H/Desktop/xml/内部XMI/C1.xml");
+		files1.add("C:/Users/Z_H/Desktop/xml/内部XMI/C2.xml");
+		files1.add("C:/Users/Z_H/Desktop/xml/内部XMI/ES.xml");
+		files1.add("C:/Users/Z_H/Desktop/xml/内部XMI/MP.xml");
+		files1.add("C:/Users/Z_H/Desktop/xml/内部XMI/SC.xml");
+		files2.add("C:/Users/Z_H/Desktop/xml/外部XMI/GNC.xml");
+		files2.add("C:/Users/Z_H/Desktop/xml/外部XMI/RS.xml");
+		files2.add("C:/Users/Z_H/Desktop/xml/外部XMI/OC.xml");
+		files2.add("C:/Users/Z_H/Desktop/xml/外部XMI/Radar.xml");
+		List<String> t = new ArrayList();
+		t.add(url);
+		List<TableData> td = new GetTableName().GTName(files1, files2);
+		for (TableData t1 : td) {
+			System.out.println(t1.getChart() + ":" + t1.getName());
+		}
+	}
+
+	public List<String> FinalGTName() throws SQLException {
+		List<String> vals = new ArrayList();
+		Connection conn = JdbcUtils.getConnection();
+		Statement st = conn.createStatement();
+		ResultSet rs = st.executeQuery(
+				"select COLUMN_NAME from information_schema.COLUMNS where table_name = 'basicpath' and table_schema = 'basicpath';");
+		while (rs.next())
+			vals.add(rs.getObject(1).toString());
+		return vals;
+	}
+
+	public static List<TableData> GTName(List<String> url1, List<String> url2) throws DocumentException { // url1内部XMI,url2外部XMI
+		List<T_Keys> t_list = new ArrayList(); // 时间影响关系
+		List<Keys> list = new ArrayList(); // 依赖关系
+		List<DecNode> declist = new ArrayList(); // 决定节点
+		List<Chart> cha1 = new ChartFunction().Createchart(url1); // 内部XMMI
+		List<Chart> cha2 = new ChartFunction().Createchart(url2); // 外部XMI
+		List<Chart> cha = new ArrayList(); // 整个sysml图的合集
+		cha.addAll(cha1);
+		cha.addAll(cha2);
+		List<TableData> TD = new ArrayList();
+		for (Chart c : cha1) {
+			declist.add(c.getDeclist()); // 存储所有决定节点
+		}
+		// 依赖关系
+		list = new RelyFunction().FinalFunction(declist, cha1);
+		for (int i = 0; i < list.size(); i++) // 去除冗余依赖关系
+			for (int j = i + 1; j < list.size(); j++) {
+				String name1 = new GetName().varname(list.get(i).getOne());
+				String name2 = new GetName().varname(list.get(j).getOne());
+				String chart1 = list.get(i).getOne().getChart();
+				String chart2 = list.get(j).getOne().getChart();
+				if (name1.equals(name2) && chart1.equals(chart2))
+					list.remove(j);
+			}
+		// 时间影响关系
+		t_list = new Dependency().Dependency(list, cha1, cha2);
+		for (int i = 0; i < t_list.size(); i++) // 去除冗余的关系
+			for (int j = i + 1; j < t_list.size(); j++) {
+				String name1 = new GetName().varname(t_list.get(i).getOne());
+				String name2 = new GetName().varname(t_list.get(j).getOne());
+				if (name1.equals(name2))
+					t_list.remove(j);
+			}
+		// 存储结果节点
+		List<NNode> vals = new ArrayList();
+		for (DecNode d : declist)
+			vals.addAll(d.getNode());
+		for (int i = 0; i < vals.size(); i++) // 去除节点命一样的节点
+			for (int j = i + 1; j < vals.size(); j++) {
+				String name1 = new GetName().varname(vals.get(i));
+				String name2 = new GetName().varname(vals.get(j));
+				if (name1.equals(name2)) {
+					vals.remove(j);
+					j--;
+				}
+			}
+		// 加入时间影响关系
+		for (int i = 0; i < vals.size(); i++) {
+			int a = 0;
+			for (T_Keys tk : t_list) {
+				if (tk.getOne().getName().equals(vals.get(i).getName())) {
+					NNode t1 = tk.getTwo().get(0);
+					NNode t2 = tk.getTwo().get(1);
+					vals.remove(i);
+					vals.add(i, t1);
+					vals.add(i + 1, t2);
+					i++;
+					a = 1;
+					break;
+				}
+			}
+			// 加入依赖关系
+			if (a == 0) {
+				for (Keys k : list)
+					if (k.getOne().getName().equals(vals.get(i).getName())) {
+						vals.remove(i);
+						i--;
+						break;
+					}
+			}
+		}
+		// 寻找发送放、基本动作赋值和数组变量
+		List<Keys> SR_NNode = new Rely().Rely1(cha);
+		for (NNode tmp : vals) {
+			TableData t = new TableData();
+			String name = new GetTableName().GetNNodeName(tmp);
+			if (tmp.getType().equals("uml:DecisionNode")) {
+				int a = 0;
+				for (Keys k : SR_NNode) {
+					NNode n = k.getTwo();
+					String name1 = n.getName();
+					if (name1.equals(name) && k.getOne().getChart().equals(tmp.getChart())) {
+						a = 1;
+						save = new ArrayList();
+						boolean isSz = isSZ(n, cha);
+						if (isSz) {
+							t.setName(name + "[:]");
+						} else {
+							t.setName(name);
+						}
+						t.setChart(n.getChart());
+						break;
+					}
+				}
+				if (a == 0) {
+					save = new ArrayList();
+					boolean isSz = isSZ(tmp, cha);
+					if (isSz) {
+						t.setName(name + "[ ]");
+					} else {
+						t.setName(name);
+					}
+					t.setChart(tmp.getChart());
+				}
+			} else if (tmp.getType().equals("uml:AcceptEventTimerAction")) {
+				for (Chart c : cha)
+					if (c.getChart().equals(tmp.getChart())) {
+						int i = 0;
+						for (NNode n : c.getNode())
+							if (n.getType().equals("uml:Action")) {
+								int n1 = n.getName().indexOf(":");
+								int n2 = n.getName().indexOf("=");
+								String E1 = n.getName().substring(0, n1 - 1);
+								String E2 = n.getName().substring(n2 + 1, n.getName().length()).replace(" ", "");
+								if (E1.equals(new GetTableName().GetNNodeName(tmp))) {
+									t.setName(E2);
+									t.setChart(tmp.getChart());
+									i = 1;
+									break;
+
+								}
+							}
+						if (i == 0) {
+							t.setName(name);
+							t.setChart(tmp.getChart());
+						}
+						break;
+					}
+			}
+			TD.add(t);
+		}
+		return TD;
+	}
+
+	public List<NNode> GTName1(List<String> url1, List<String> url2) throws DocumentException { // url1鍐呴儴XMI,url2澶栭儴XMI
+		List<T_Keys> t_list = new ArrayList(); // 时间影响管信息
+		List<Keys> list = new ArrayList(); // 依赖关系
+		List<DecNode> declist = new ArrayList(); // 决定节点
+		List<Chart> cha1 = new ChartFunction().Createchart(url1); // 内部XMI
+		List<Chart> cha2 = new ChartFunction().Createchart(url2); // 外部XMI
+		for (Chart c : cha1) {
+			declist.add(c.getDeclist()); // 内部XMI的决定节点
+		}
+		// 生成依赖关系
+		list = new RelyFunction().FinalFunction(declist, cha1);
+		for (int i = 0; i < list.size(); i++) // 去除冗余
+			for (int j = i + 1; j < list.size(); j++) {
+				String name1 = new GetName().varname(list.get(i).getOne());
+				String name2 = new GetName().varname(list.get(j).getOne());
+				String chart1 = list.get(i).getOne().getChart();
+				String chart2 = list.get(j).getOne().getChart();
+				if (name1.equals(name2) && chart1.equals(chart2))
+					list.remove(j);
+			}
+		// 时间影响关系
+		t_list = new Dependency().Dependency(list, cha1, cha2);
+		for (int i = 0; i < t_list.size(); i++) // 去除冗余
+			for (int j = i + 1; j < t_list.size(); j++) {
+				String name1 = new GetName().varname(t_list.get(i).getOne());
+				String name2 = new GetName().varname(t_list.get(j).getOne());
+				if (name1.equals(name2))
+					t_list.remove(j);
+			}
+		// 保存结果
+		List<NNode> vals = new ArrayList();
+		for (DecNode d : declist)
+			vals.addAll(d.getNode());
+		for (int i = 0; i < vals.size(); i++) // 去除变量一样的节点
+			for (int j = i + 1; j < vals.size(); j++) {
+				String name1 = new GetName().varname(vals.get(i));
+				String name2 = new GetName().varname(vals.get(j));
+				if (name1.equals(name2)) {
+					vals.remove(j);
+					j--;
+				}
+			}
+		for (int i = 0; i < vals.size(); i++) {
+			int a = 0;
+			for (T_Keys tk : t_list) {
+				if (tk.getOne().getName().equals(vals.get(i).getName())) {
+					NNode t1 = tk.getTwo().get(0);
+					NNode t2 = tk.getTwo().get(1);
+					vals.remove(i);
+					vals.add(i, t1);
+					vals.add(i + 1, t2);
+					i++;
+					a = 1;
+					break;
+				}
+			}
+			if (a == 0) {
+				for (Keys k : list)
+					if (k.getOne().getName().equals(vals.get(i).getName())) {
+						vals.remove(i);
+						i--;
+						break;
+					}
+			}
+		}
+		return vals;
+	}
+
+	// 根据基本路径生成表格的项名
+	public List<TableData> GTName3(List<List<P_Keys>> list) throws DocumentException {
+		// 存储结果节点
+		List<NNode> vals = new ArrayList();
+		List<P_Keys> p1 = new ArrayList();
+		for (List<P_Keys> p : list) // 寻找长度最长的链
+			if (p.size() > p1.size())
+				p1 = p;
+		for (List<P_Keys> p : list)
+			for (P_Keys k : p) {
+				int a = 0;
+				for (P_Keys k1 : p1) {
+					String name1 = new GetTableName().GetNNodeName(k.getNode());
+					String name2 = new GetTableName().GetNNodeName(k1.getNode());
+					if (name1.equals(name2)) {
+						a = 1;
+						break;
+					}
+				}
+				if (a == 0)
+					p1.add(k);
+			}
+		List<TableData> TD = new ArrayList();
+		for (P_Keys tmp : p1) {
+			TableData t = new TableData();
+			t.setName(new GetTableName().GetNNodeName(tmp.getNode()));
+			t.setChart(tmp.getNode().getChart());
+			TD.add(t);
+		}
+		return TD;
+	}
+
+	// 获取决定节点和时间等待动作节点的变量名
+	public String GetNNodeName(NNode n) {
+		String name = null;
+		if (n.getType().equals("uml:DecisionNode")) {
+			name = new GetName().varname(n);
+		}
+		if (n.getType().equals("uml:AcceptEventTimerAction")) {
+			int i = n.getName().indexOf("(");
+			int j = n.getName().indexOf(")");
+			name = n.getName().substring(i + 1, j);
+		}
+		return name;
+	}
+
+	// 判断当前节点是否是数组
+	public static boolean isSZ(NNode n, List<Chart> cha) {
+		boolean res = false;
+		Chart c1 = new Chart();
+		for (Chart c : cha)
+			if (c.getChart().equals(n.getChart())) {
+				c1 = c;
+				break;
+			}
+		int l = new Rely().Length(n.getInIdref());
+		if (!save.contains(n)) {
+			if (l > 0) {
+				save.add(n);
+				for (int i = 0; i < l; i++) {
+					String nextid = n.getInIdref()[i];
+					NNode n1 = new Rely().RFindNode(nextid, c1);
+					if (n1.getType().equals("uml:InitialNode"))
+						return false;
+					else {
+						res = isSZ(n1, cha);
+					}
+				}
+			} else {
+				return true;
+			}
+		}
+		return res;
+	}
+}

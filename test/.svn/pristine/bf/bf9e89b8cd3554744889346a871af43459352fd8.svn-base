@@ -1,0 +1,37 @@
+package JDBC;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+public final class JdbcUtils {
+	private static String url = "jdbc:mysql://localhost:3306/data";
+	private static String user = "root";
+	private static String password = "s13263327";
+
+	private JdbcUtils() {
+	}
+
+	static {
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+		} catch (ClassNotFoundException e) {
+			throw new ExceptionInInitializerError(e);
+		}
+	}
+
+	public static Connection getConnection() throws SQLException {
+		return DriverManager.getConnection(url, user, password);
+	}
+	
+	public static void free(ResultSet rs,Statement st,Connection conn) throws SQLException{
+		if(rs!=null)
+			rs.close();
+		if(st!=null)
+			st.close();
+		if(conn!=null)
+			conn.close();
+	}
+}

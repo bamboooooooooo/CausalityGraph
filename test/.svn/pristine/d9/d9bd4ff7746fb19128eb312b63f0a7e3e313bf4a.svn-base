@@ -1,0 +1,63 @@
+package Function;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import Object.Chart;
+import Object.Keys;
+import Object.NNode;
+import Object.P_Keys;
+
+public class GenerateKeyVal {
+	public void GenerateKV(Keys k, List<Chart> cha) {
+		String name1 = new GetTableName().GetNNodeName(k.getOne());
+		String chart = k.getTwo().getChart();
+		String name2 = new GetTableName().GetNNodeName(k.getTwo());
+		for (Chart c : cha)
+			if (c.getChart().equals(chart)) {
+				List<String> one_val = new ArrayList();
+				List<String> two_val = new ArrayList();
+				P_Keys p = new P_Keys();
+				p.setNode(k.getTwo());
+				p.setBool("true");
+				List<Keys> l = new ArrayList();
+				new BasicPath().GenerateDate(p,l);
+				String value1 = null;
+				NNode nextnode = new BasicPath().FindNextNode(k.getTwo(), c, "true");
+				value1 = new GenerateKeyVal().SetValue(nextnode, name1, c);
+				one_val.add(value1);
+				two_val.add(p.getValue());
+				p.setBool("false");
+				new BasicPath().GenerateDate(p,l);
+				nextnode = new BasicPath().FindNextNode(k.getTwo(), c, "false");
+				value1 = new GenerateKeyVal().SetValue(nextnode, name1, c);
+				one_val.add(value1);
+				two_val.add(p.getValue());
+				k.setOne_val(one_val);
+				k.setTwo_val(two_val);
+			}
+	}
+
+	public String SetValue(NNode n, String name, Chart c) {
+		String value = null;
+		if (!n.getType().equals("uml:FlowFinalNode") && !n.getType().equals("uml:ActivityFinalNode"))
+			if (n.getType().equals("uml:Action")) {
+				int index1 = n.getName().indexOf(":");
+				String name1 = (n.getName().substring(0, index1 - 1)).replace(" ", "");
+				if (name1.equals(name)) {
+					int index = n.getName().indexOf("=");
+					String name2 = (n.getName().substring(index + 1, n.getName().length())).replace(" ", "");
+					value = name2;
+				}
+			} else {
+				for (int i = 0; i < n.getOutIdref().length; i++) {
+					String nextid = n.getOutIdref()[i];
+					NNode nextnode = new Rely().FindNode(nextid, c);
+					value = SetValue(nextnode, name, c);
+					if (!value.equals(null))
+						break;
+				}
+			}
+		return value;
+	}
+}

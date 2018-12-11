@@ -1,0 +1,21 @@
+package object;
+
+import java.util.List;
+
+public class Tables {
+	String t_name; // 笛卡尔积后表名
+	List<String> tables; // 表格
+	public String getT_name() {
+		return t_name;
+	}
+	public void setT_name(String t_name) {
+		this.t_name = t_name;
+	}
+	public List<String> getTables() {
+		return tables;
+	}
+	public void setTables(List<String> tables) {
+		this.tables = tables;
+	}
+
+}

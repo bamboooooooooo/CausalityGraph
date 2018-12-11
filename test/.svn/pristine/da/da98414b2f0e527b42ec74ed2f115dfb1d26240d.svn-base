@@ -1,0 +1,49 @@
+model EmergencySys
+  Integer a1;
+  Integer a2;
+  Integer n1;
+  Integer n2;
+  Real Tm;
+  Integer Mode;
+  Integer AccType;
+  Boolean isHMode;
+  Boolean isMMode;
+  Boolean SepSignal;
+  Boolean EmeSignal;
+algorithm
+if SepSignal then
+ isFinish := true;
+end if;
+if Tm then
+ isFinish := true;
+end if;
+if Mode==0 then
+ isHMode:=true;
+ when sample(0,5) then
+if AccType==0 then
+if a1>10 then
+ n1:=n1+1;
+else
+ n1:=0;
+end if;
+if n1>=3 then
+ EmeSignal := true;
+end if;
+end if;
+end when;
+else
+ isMMode:=true;
+ when sample(0,5) then
+if AccType==1 then
+if a2>10 then
+ n2:=n2+1;
+else
+ n2:=0;
+end if;
+if n2>=3 then
+ EmeSignal := true;
+end if;
+end if;
+end when;
+end if;
+end EmergencySys;

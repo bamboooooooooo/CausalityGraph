@@ -1,0 +1,44 @@
+package function;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import JDBC.JdbcUtils;
+import object.basicpath;
+
+public class ReadData {
+	public List<basicpath> readdata() throws SQLException {
+		Connection conn = JdbcUtils.getConnection();
+		Statement st = conn.createStatement();
+		ResultSet rs = st.executeQuery("select * from basicpath");
+		List<basicpath> lb = new ArrayList();
+		int i = 1;
+		while (rs.next()) {
+			basicpath b = new basicpath();
+			b.setNo(Integer.toString(i));
+			b.setB_T_gkp(rs.getObject(1).toString());
+			b.setB_T_gkbTime(rs.getObject(2).toString());
+			b.setA_Tab(rs.getObject(3).toString());
+			b.setB_WorkMode(rs.getObject(4).toString());
+			b.setC_GZMode(rs.getObject(5).toString());
+			b.setC_AccType(rs.getObject(6).toString());
+			b.setC_a1(rs.getObject(7).toString());
+			b.setC_a2(rs.getObject(8).toString());
+			b.setLD_Elevation(rs.getObject(9).toString());
+			b.setC1_notHandled(rs.getObject(10).toString());
+			b.setC1_available(rs.getObject(11).toString());
+			b.setZ_GZValue(rs.getObject(12).toString());
+			b.setZ_GZValueTime(rs.getObject(13).toString());
+			b.setZ_T(rs.getObject(14).toString());
+			lb.add(b);
+			i++;
+		}
+		JdbcUtils.free(rs, st, conn);
+		return lb;
+	}
+}

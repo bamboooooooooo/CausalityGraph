@@ -1,0 +1,51 @@
+package Function;
+
+import java.io.File;
+import java.util.Iterator;
+import java.util.List;
+
+import org.dom4j.Attribute;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+public class GetBDDName {
+	String bn = null;
+
+	public String bddname(String url) throws DocumentException {
+		bn = null;
+		SAXReader reader = new SAXReader();
+		Document document = reader.read(new File(url));
+		Element root = document.getRootElement();
+		Root(root);
+		return bn;
+	}
+
+	public void Root(Element e) {
+		String n = null;
+		if (e.getName() == "diagram") {
+			List<Element> list = e.elements();
+			for (Element e1 : list) {
+				int j = 0;
+				if (e1.getName() == "properties") {
+					List<Attribute> list1 = e1.attributes();
+					for (Attribute a : list1) {
+						if (a.getName().equals("name")) {
+							bn = a.getValue();
+							j = 1;
+							break;
+						}
+					}
+				}
+				if (j == 1)
+					break;
+			}
+		}
+		Iterator<Element> iterator = e.elementIterator();// ����xml��ÿһ������
+		while (iterator.hasNext() && n == null) {
+			Element e1 = iterator.next();
+			Root(e1);
+		}
+	}
+}

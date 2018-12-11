@@ -1,0 +1,90 @@
+package type;
+
+import java.util.ArrayList;
+
+public class Node{
+	public String id;
+	public String name;
+	public String classname;	
+	public String owner;
+	public String type;
+	
+	//�ҵ�������inActionPin����outActionPin�ڵ�ĸ����ڵ�
+	public Node findOwnerNode(ArrayList<Node> nodes, String owner){
+		Node ownerNode = new Node();
+		for(Node node : nodes){
+			if(node.id.equals(owner)){
+				ownerNode = node;
+			}
+		}
+		return ownerNode;
+		
+	}
+	//�ҵ�PrimitiveAction��outActionPin�ڵ�
+	public Node findOutActionPin(ArrayList<Node> nodes, String id){
+		Node outActionPin = new Node();
+//		Boolean hasDirect = true;
+		for(Node node:nodes){
+			if(node.owner.equals(id)&node.type.equals("outActionPin")){
+				outActionPin = node;
+			}
+		}
+/*		if (outActionPin.id != null){
+			hasDirect = false;
+		}*/
+		return outActionPin;		
+	}
+	//����һ���ڵ�
+	public Node findNextNode(ArrayList<Node> nodes, ArrayList<Transition> transitions,String id){
+		Transition T = new Transition();
+		Node nextNode = new Node();
+		for(Transition t:transitions){
+			if(t.source.equals(id)){
+				T = t;
+			}
+		}
+		nextNode = T.findTargetNode(nodes, T.target);
+		return nextNode;		
+	}
+	//�Ҵӽڵ��ȥ��transition
+	public ArrayList<Transition> findOutTransition(ArrayList<Transition> transitions, Node node){
+		ArrayList<Transition> outTs = new ArrayList<Transition>();
+		for(Transition t:transitions){
+			if(t.source.equals(node.id)){
+				outTs.add(t);
+			}
+		}
+		return outTs;		
+	}
+	//find incoming transitions of a node
+	public ArrayList<Transition> findInTransition(ArrayList<Transition> transitions, Node node){
+		ArrayList<Transition> inTs = new ArrayList<Transition>();
+		for(Transition t:transitions){
+			if(t.target.equals(node.id)){
+				inTs.add(t);
+			}
+		}
+		return inTs;		
+	}
+	public Node findPreviousNode(ArrayList<Node> nodes, ArrayList<Transition> transitions,String id){
+		Transition T = new Transition();
+		Node previousNode = new Node();
+		for(Transition t:transitions){
+			if(t.target.equals(id)){
+				T = t;
+			}
+		}
+		previousNode = T.findSourceNode(nodes, T.source);
+		return previousNode;		
+	}
+	public ActivityPartition findActivityPartition(Node node, ArrayList<ActivityPartition> aps){
+		ActivityPartition AP = new ActivityPartition();
+		for(ActivityPartition ap : aps){
+			if(ap.id.equals(node.owner)){
+				AP = ap;
+			}
+		}
+		return AP;
+		
+	}
+}

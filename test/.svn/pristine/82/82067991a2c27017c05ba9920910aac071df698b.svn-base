@@ -1,0 +1,31 @@
+package object;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Block {
+	List<Att> vals;
+	String name;
+
+	public Block() {
+		this.vals = new ArrayList();
+		this.name = null;
+	}
+
+	public List<Att> getVals() {
+		return vals;
+	}
+
+	public void setVals(List<Att> vals) {
+		this.vals = vals;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+}

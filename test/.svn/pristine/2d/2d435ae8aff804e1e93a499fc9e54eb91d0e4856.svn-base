@@ -1,0 +1,81 @@
+package object;
+
+import java.util.List;
+
+import function.Dom4JforXML;
+
+public class Chart {
+	List<NNode> node; // 节点
+	DecNode declist = new DecNode(); // 决定节点
+	List<Edge> edge; // 边
+	String path;
+	String chart;
+
+	public Chart() {
+		this.node = null;
+		this.edge = null;
+		this.path = null;
+		this.chart = null;
+		this.declist = null;
+	}
+
+	public Chart(String p, String c) {
+		Dom4JforXML tmp = new Dom4JforXML();
+		tmp.iterator();
+		try {
+			tmp.findnodes(p);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		this.setNode(tmp.list2);
+		for (NNode node : tmp.list2)
+			node.setChart(c);
+		this.setEdge(tmp.list3);
+		this.setDeclist(tmp.list4, c);
+		this.setPath(p);
+		this.setChart(c);
+	}
+
+	public String getChart() {
+		return chart;
+	}
+
+	public void setChart(String chart) {
+		this.chart = chart;
+	}
+
+	public DecNode getDeclist() {
+		return declist;
+	}
+
+	public void setDeclist(List<NNode> node, String chart) {
+		this.declist.setNode(node);
+		this.declist.setChart(chart);
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
+	}
+
+	public List<NNode> getNode() {
+		return node;
+	}
+
+	public void setNode(List<NNode> node) {
+		this.node = node;
+	}
+
+	public List<Edge> getEdge() {
+		return edge;
+	}
+
+	public void setEdge(List<Edge> edge) {
+		this.edge = edge;
+	}
+
+}

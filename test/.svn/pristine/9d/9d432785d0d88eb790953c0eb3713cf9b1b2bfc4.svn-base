@@ -1,0 +1,35 @@
+package function;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import JDBC.ReadTableData;
+import object.basicpath;
+
+public class GenerateCSV {
+	public void GenerateCSVByNo(int n) {
+		List<List<String>> data = new ArrayList();
+		List<String> vals = new ArrayList();
+		try {
+			vals = new ReadTableData().GTName();
+			data = new ReadTableData().GetData();
+		} catch (SQLException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		
+		List<String> d = data.get(n - 1);
+		if (d != null) {
+			new CreateTxt().createtxt(d,vals);
+			new OpenModelica().run();
+			try {
+				new CopyFile().copy(Integer.toString(n));
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+	}
+}

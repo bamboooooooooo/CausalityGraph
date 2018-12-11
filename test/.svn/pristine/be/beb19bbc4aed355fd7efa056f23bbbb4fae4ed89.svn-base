@@ -1,0 +1,27 @@
+package object;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class T_Keys {
+	NNode one; // 时间关系依赖发起者
+	List<NNode> two; // 时间关系依赖接收者
+	public void T_Keys(){
+		this.one=null;
+		this.two=new ArrayList();
+	}
+	public NNode getOne() {
+		return one;
+	}
+	public void setOne(NNode one) {
+		this.one = one;
+	}
+	public List<NNode> getTwo() {
+		return two;
+	}
+	public void setTwo(List<NNode> two) {
+		this.two = two;
+	}
+
+	
+}

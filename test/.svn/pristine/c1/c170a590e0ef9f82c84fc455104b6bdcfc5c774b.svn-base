@@ -1,0 +1,240 @@
+package function;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import object.Chart;
+import object.Edge;
+import object.Keys;
+import object.NNode;
+
+public class Rely {
+	String two_chart;
+	List<NNode> save = new ArrayList(); // 记录访问过的节点，防止循环
+
+	public List<Keys> Rely1(List<Chart> cha) { // 接收与发送
+		List<Keys> list = new ArrayList();
+		for (Chart c : cha) {
+			for (NNode n : c.getNode()) {
+				if (n.getType().equals("uml:AcceptEventAction")) {
+					Keys k = new Keys();
+					k.setOne(n);
+					if (FindSend(n.getName(), cha) != null) {
+						k.setTwo(FindSend(n.getName(), cha));
+						list.add(k);
+					}
+				}
+			}
+		}
+		return list;
+	}
+
+	public List<Keys> Rely2(List<Chart> cha) { // 等待时间动作决定
+		List<Keys> list = new ArrayList();
+		for (Chart c : cha) {
+			for (NNode n : c.getNode()) {
+				if (n.getType().equals("uml:AcceptEventTimerAction")) {
+					save = new ArrayList();
+					list.addAll(FindPath(n, n, c));
+				}
+			}
+		}
+		return list;
+	}
+
+	public List<Keys> Rely3(List<Chart> cha) { // 决定节点决定
+		List<Keys> list = new ArrayList();
+		for (Chart c : cha) {
+			for (NNode n : c.getNode()) {
+				if (n.getType().equals("uml:DecisionNode")) {
+					save = new ArrayList();
+					// System.out.println(n.getName());
+					list.addAll(FindPath(n, n, c));
+					// System.out.println("/n");
+				}
+			}
+		}
+		return list;
+	}
+
+	public List<Keys> FindPath(NNode n, NNode nextnode, Chart cha) {
+		List<Keys> list = new ArrayList();
+		save = new ArrayList();
+		int t = 0; // 判读当前节点是否访问过
+		if (Length(nextnode.getOutIdref()) > 0) {
+			for (int i = 0; i < Length(nextnode.getOutIdref()); i++) {
+				String nextid = nextnode.getOutIdref()[i];
+				// System.out.println(nextnode.getName()+":"+nextnode.getType()+":"+Length(nextnode.getOutIdref()));
+				if (FindNode(nextid, cha).getType().equals("uml:AcceptEventTimerAction")
+						|| FindNode(nextid, cha).getType().equals("uml:DecisionNode"))
+					t = 1;
+				for (NNode node : save) {
+					if (nextnode == node) {
+						for (NNode nnode : save) {
+							if (FindNode(nextid, cha) == nnode) {
+								t = 1;
+								break;
+							}
+						}
+					}
+				}
+				if (t == 1) {
+					t = 0;
+					continue;
+				}
+				save.add(nextnode);
+				list.addAll(FindPath(n, FindNode(nextid, cha), cha));
+				if (nextnode.getType().equals("uml:SendSignalAction") || nextnode.getType().equals("uml:Action")) {
+					Keys k = new Keys();
+					k.setOne(nextnode);
+					k.setTwo(n);
+					list.add(k);
+					/*
+					 * System.out.println(cha.getChart());
+					 * System.out.println(k.getOne().getName());
+					 * System.out.println(k.getTwo().getName());
+					 */
+
+				}
+			}
+		}
+		return list;
+	}
+
+	public NNode FindNode(String id, Chart cha) { // 正序查找
+		NNode n = new NNode();
+		for (NNode node : cha.getNode()) {
+			if (node.getId().equals(id)) {
+				n = node;
+				break;
+			}
+		}
+		for (Edge edge : cha.getEdge()) {
+			if (edge.getId().equals(id)) {
+				String nextid = edge.getTarget();
+				n = FindNode(nextid, cha);
+				break;
+			}
+		}
+		return n;
+	}
+
+	public NNode RFindNode(String id, Chart cha) { // 逆序查找
+		NNode n = new NNode();
+		for (NNode node : cha.getNode()) {
+			if (node.getId().equals(id)) {
+				n = node;
+				break;
+			}
+		}
+		for (Edge edge : cha.getEdge()) {
+			if (edge.getId().equals(id)) {
+				String nextid = edge.getSource();
+				n = FindNode(nextid, cha);
+				break;
+			}
+		}
+		return n;
+	}
+
+	public int Length(String[] S) {
+		int i = 0;
+		for (String s : S) {
+			if (s != null)
+				i++;
+			else
+				break;
+		}
+		return i;
+	}
+
+	public NNode FindSend(String name, List<Chart> cha) {
+		NNode re = null;
+		for (Chart c : cha) {
+			for (NNode n : c.getNode()) {
+				if (n.getName() != null) {
+					if (n.getName().equals(name) && n.getType().equals("uml:SendSignalAction")) {
+						re = n;
+						two_chart = c.getChart();
+					}
+				}
+			}
+		}
+		return re;
+	}
+
+	public NNode New_F_Decsion(NNode n, Chart cha) {
+		NNode t = new NNode();
+		if (Length(n.getInIdref()) > 0) {
+			for (int i = 0; i < Length(n.getInIdref()); i++) {
+				String nextid = n.getInIdref()[i];
+				NNode n2 = RFindNode(nextid, cha);
+				if (n2.getType().equals("uml:AcceptEventTimerAction")) {
+					t = n2;
+				} else {
+					t = New_F_Decsion(n2, cha);
+				}
+			}
+		}
+		return t;
+	}
+
+	public List<NNode> F_Decsion(NNode n, Chart cha, List<Chart> c1, List<Chart> c2) { // 时间依赖关系的回溯函数,
+																						// c1是内部XMI,c2是外部XMI
+		List<NNode> list = new ArrayList();
+		int t = 0; // �ж���ǰ�ڵ��Ƿ���ʹ�
+		if (Length(n.getInIdref()) > 0) {
+			save.add(n);
+			for (int i = 0; i < Length(n.getInIdref()); i++) {
+				String nextid = n.getInIdref()[i];
+				NNode n2 = RFindNode(nextid, cha);
+				// System.out.println(nextnode.getName()+":"+nextnode.getType()+":"+Length(nextnode.getOutIdref()));
+				for (NNode tmp : save) {
+					if (n2 == tmp) {
+						t = 1;
+						break;
+					}
+				}
+				if (n2.getType().equals("uml:DecisionNode")) {
+					int a = 0;
+					for (NNode tmp : save) // �жϵ�ǰ�����ڵ��Ƿ�����list��
+						if (n2 == tmp) {
+							a = 1;
+							break;
+						}
+					if (a == 0) {
+						String name = new GetName().varname(n2);
+						for (NNode n1 : cha.getNode()) {
+							if (n1.getName() != null) {
+								String var_name = new GetName().varname(n1);
+								if (var_name.equals(name) && n1.getType().equals("uml:AcceptEventAction")) {
+									for (Chart c : c2) {
+										for (NNode n3 : c.getNode()) {
+											if (n3.getName() != null) {
+												String var_name3 = new GetName().varname(n3);
+												if (var_name3.equals(name)
+														&& n3.getType().equals("uml:SendSignalAction")) {
+													list.add(new Rely().New_F_Decsion(n3, c));
+												}
+											}
+										}
+									}
+									save.add(n2);
+									break;
+								}
+							}
+						}
+					}
+					break;
+				}
+
+				if (t == 1) {
+					t = 0;
+					continue;
+				}
+				list.addAll(F_Decsion(n2, cha, c1, c2));
+			}
+		}
+		return list;
+	}
+}

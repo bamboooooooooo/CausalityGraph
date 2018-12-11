@@ -1,0 +1,18 @@
+package object;
+
+public class TableData {
+	String name;
+	String chart;
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getChart() {
+		return chart;
+	}
+	public void setChart(String chart) {
+		this.chart = chart;
+	}
+}

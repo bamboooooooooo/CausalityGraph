@@ -1,0 +1,27 @@
+package JDBC;
+
+import java.sql.*;
+
+public class Read {
+	public void read() throws SQLException {
+		//注册驱动
+		DriverManager.registerDriver(new com.mysql.jdbc.Driver());
+		//建立连接
+		Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/basicpath", "root", "s13263327");
+		//创建语句
+		Statement st = conn.createStatement();
+		//执行语句
+		ResultSet rs = st.executeQuery("select * from b");
+		//列数
+		ResultSetMetaData rsmd=rs.getMetaData();
+		int column=rsmd.getColumnCount();
+		// 处理结果
+		while (rs.next()) {
+			System.out.println();
+		}
+		//释放资源
+		rs.close();
+		st.close();
+		conn.close();
+	}
+}

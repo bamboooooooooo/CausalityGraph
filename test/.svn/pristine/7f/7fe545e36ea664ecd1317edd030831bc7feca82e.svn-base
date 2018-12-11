@@ -1,0 +1,70 @@
+package object;
+
+import java.io.Serializable;
+
+public class NNode implements Serializable{
+	String type;
+	String id;
+	String name;
+	String Chart;
+	String[] InIdref;
+	String[] OutIdref;
+
+	public void NNode() {
+		this.type = null;
+		this.id = null;
+		this.name = null;
+		String Chart = null;
+		this.InIdref = null;
+		this.OutIdref = null;
+	}
+
+	public String getChart() {
+		return Chart;
+	}
+
+	public void setChart(String chart) {
+		Chart = chart;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String[] getInIdref() {
+		return InIdref;
+	}
+
+	public void setInIdref(String[] inIdref) {
+		InIdref = inIdref;
+	}
+
+	public String[] getOutIdref() {
+		return OutIdref;
+	}
+
+	public void setOutIdref(String[] outIdref) {
+		OutIdref = outIdref;
+	}
+
+}

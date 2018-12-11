@@ -1,0 +1,168 @@
+package function;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class XZFX_F {
+	static File file = new File("D:/PathData/Data");
+	static String[] fs = file.list();
+	static ArrayList<FileString> filename = new ArrayList();
+
+	static {
+		for (String name : fs) {
+			filename.add(new FileString(name));
+		}
+		Collections.sort(filename);
+	}
+
+	public int IndexOfVariant(String name, String url) throws Exception {  //变量下标
+		int i = -1;
+		BufferedReader reader = new BufferedReader(new FileReader(url));
+		String line = reader.readLine();
+		String item[] = line.split(",");
+		for (int j = 0; j < item.length; j++) {
+			int a = item[j].indexOf("\"") + 1;
+			int b = item[j].lastIndexOf("\"");
+			if (a >= 1) {
+				String na = item[j].substring(a, b);
+				if (na.equals(name)) {
+					i = j;
+					break;
+				}
+			} else {
+				if (item[j].equals(name)) {
+					i = j;
+					break;
+				}
+			}
+		}
+		reader.close();
+		return i;
+	}
+
+	// 系统发出信号1和/或信号2
+	public List<String> Constraint1and2(String name1, String name2, int n) throws Exception { //  n=1表示和，n=2表示或
+		List<String> res = new ArrayList();
+		for (FileString t : filename) {
+			int i = 0;
+			String url = "D:/PathData/Data/" + t.toString();
+			int a = IndexOfVariant(name1, url);
+			int b = IndexOfVariant(name2, url);
+			BufferedReader reader = new BufferedReader(new FileReader(url));
+			String line = reader.readLine();
+			if (a == -1 || b == -1) {
+				System.out.println("输入的信号不存在");
+			} else {
+				while ((line = reader.readLine()) != null) {
+					String item[] = line.split(",");
+					if (n == 1) {
+						if (!item[a].equals("0") && !item[b].equals("0")) {
+							i = 1;
+							break;
+						}
+					} else if (n == 2)
+						if (!item[a].equals("0") || !item[b].equals("0")) {
+							i = 1;
+							break;
+						}
+				}
+			}
+			if (i == 0)
+				res.add(t.toString().replaceAll("[.][^.]+$", ""));
+			reader.close();
+		}
+		return res;
+	}
+
+	//  信号发出后，系统一定发出 命令。用a表示
+	public List<String> Constraint3(String name1, String name2) throws Exception {
+		int a = 1;
+		List<String> res = new ArrayList();
+		for (FileString t : filename) {
+			String url = "D:/PathData/Data/" + t.toString();
+			int c = IndexOfVariant(name1, url);
+			int d = IndexOfVariant(name2, url);
+			BufferedReader reader = new BufferedReader(new FileReader(url));
+			String line = reader.readLine();
+			while ((line = reader.readLine()) != null) {
+				String item[] = line.split(",");
+				if ((!item[c].equals("0")) && (item[d].equals("0"))) {
+					a = 0;
+				}
+				if ((!item[c].equals("0")) && (!item[d].equals("0"))) {
+					a = 1;
+				}
+			}
+			if (a == 0)
+				res.add(t.toString().replaceAll("[.][^.]+$", ""));
+			reader.close();
+		}
+		return res;
+	}
+
+	//业务逻辑一致性：SepFlag
+	public List<String> Constraint4() throws Exception {
+		int a = 1;
+		List<String> res = new ArrayList();
+		for (FileString t : filename) {
+			a = 1;
+			String url = "D:/PathData/Data/"+t.toString();
+			List<String> names = ContainSep(url);
+			List<Integer> ids = new ArrayList();
+			for (String name : names) {
+				int id = IndexOfVariant(name, url);
+				if (id != -1)
+					ids.add(id);
+				else
+					System.out.println("项不存在");
+			}
+			BufferedReader reader = new BufferedReader(new FileReader(url));
+			String line = reader.readLine();
+			while ((line = reader.readLine()) != null) {
+				String item[] = line.split(",");
+				for (int i = 0; i < ids.size() - 1; i++) {
+					String v1 = item[ids.get(i)];
+					String v2 = item[ids.get(i + 1)];
+					if (v1 == v2)
+						;
+					if (!item[ids.get(i)].equals(item[ids.get(i + 1)]))
+						a = 0;
+				}
+				if (a == 0)
+					break;
+			}
+			if (a == 0)
+				res.add(t.toString().replaceAll("[.][^.]+$", ""));
+			reader.close();
+		}
+		return res;
+	}
+
+	// 当前文件含有SepFlag的项
+	public List<String> ContainSep(String url) throws Exception {
+		List<String> names = new ArrayList();
+		BufferedReader reader = new BufferedReader(new FileReader(url));
+		String line = reader.readLine();
+		String item[] = line.split(",");
+		for (int j = 0; j < item.length; j++) {
+			int index = item[j].indexOf("SepFlag");
+			if (index>=0) {
+				int a = item[j].indexOf("\"") + 1;
+				int b = item[j].lastIndexOf("\"");
+				if (a >= 1) {
+					String na = item[j].substring(a, b);
+			        names.add(na);
+				} else {
+					names.add(item[j]);
+				}
+			}
+		}
+		reader.close();
+		return names;
+	}
+}

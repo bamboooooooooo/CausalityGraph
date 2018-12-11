@@ -1,0 +1,50 @@
+package object;
+
+import java.io.Serializable;
+import java.util.List;
+
+public class Keys implements Serializable{
+	NNode one; // 依赖发起者
+	NNode two; // 依赖接收者
+	List<String> one_val;
+	List<String> two_val;
+
+	public Keys() {
+		this.one = null;
+		this.two = null;
+		this.one_val = null;
+		this.two_val = null;
+	}
+
+	public List<String> getOne_val() {
+		return one_val;
+	}
+
+	public void setOne_val(List<String> one_val) {
+		this.one_val = one_val;
+	}
+
+	public List<String> getTwo_val() {
+		return two_val;
+	}
+
+	public void setTwo_val(List<String> two_val) {
+		this.two_val = two_val;
+	}
+
+	public NNode getOne() {
+		return one;
+	}
+
+	public void setOne(NNode one) {
+		this.one = one;
+	}
+
+	public NNode getTwo() {
+		return two;
+	}
+
+	public void setTwo(NNode two) {
+		this.two = two;
+	}
+}

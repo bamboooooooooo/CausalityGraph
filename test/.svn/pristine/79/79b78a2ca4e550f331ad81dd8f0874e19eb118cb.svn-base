@@ -1,0 +1,7 @@
+package type;
+
+public class Correspondence {	
+	public String activity;
+	public String partition;
+	public String role;
+}

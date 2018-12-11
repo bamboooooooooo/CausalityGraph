@@ -1,0 +1,64 @@
+package JDBC;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import function.GetNNodeType;
+
+public class ReadTableData {
+	public List<String> GTName() throws SQLException {
+		List<String> vals = new ArrayList();
+		Connection conn = JdbcUtils.getConnection();
+		Statement st = conn.createStatement();
+		ResultSet rs = st.executeQuery(
+				"select COLUMN_NAME from information_schema.COLUMNS where table_name = 'basicpath' and table_schema = 'data';");
+		while (rs.next())
+			vals.add(rs.getObject(1).toString());
+		st.close();
+		conn.close();
+		return vals;
+	}
+
+	public List<List<String>> GetData() throws SQLException {
+		List<List<String>> result = new ArrayList();
+		Connection conn = JdbcUtils.getConnection();
+		Statement st = conn.createStatement();
+		ResultSet rs = st.executeQuery("select * from basicpath");
+		List<String> vals = GTName();
+		// 列数
+		ResultSetMetaData rsmd = rs.getMetaData();
+		int column = rsmd.getColumnCount();
+		int i = 1;
+		while (rs.next()) {
+			System.out.println(i);
+			List<String> res = new ArrayList();
+			res.add(Integer.toString(i));
+			for (int j = 1; j <= column; j++)
+				if (rs.getObject(j) != null)
+					res.add(rs.getObject(j).toString());
+				else {
+					String type = new GetNNodeType().GetNType(vals.get(j - 1));
+					switch (type) {
+					case "Num":
+						res.add("-1");
+						break;
+					case "Bool":
+						res.add("false");
+						break;
+					default:
+						res.add("/");
+						break;
+					}
+				}
+			result.add(res);
+			i++;
+		}
+		JdbcUtils.free(rs, st, conn);
+		return result;
+	}
+}

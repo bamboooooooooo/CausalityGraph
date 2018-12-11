@@ -1,0 +1,239 @@
+package UI;
+
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
+
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTable;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+
+import function.CheckCSV;
+import function.DecNodeType;
+import function.GenerateCSV;
+import function.GetNNodeType;
+import function.GetName;
+import function.GetTableName;
+import object.Chart;
+import object.NNode;
+import object.P_Keys;
+
+public class OneChartShowData extends JFrame {
+
+	Vector vData = new Vector();
+	Vector vName = new Vector();
+	private JPanel contentPane;
+	private JTable table;
+
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					List<List<P_Keys>> list1 = new ArrayList();
+					List<NNode> names = new ArrayList();
+					Chart a = null;
+					OneChartShowData frame = new OneChartShowData(list1, names, a);
+					frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the frame.
+	 */
+	public OneChartShowData(final List<List<P_Keys>> list, final List<NNode> names, final Chart cha) {
+		setBounds(100, 100, 835, 460);
+		contentPane = new JPanel();
+		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		setContentPane(contentPane);
+
+		JButton button = new JButton("单条运行");
+		button.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				try {
+					int index = table.getSelectedRow();
+					String str = "D:/OneChart/Modelica/CalOne.txt";
+					File f = new File(str);
+					if (!f.exists())
+						f.createNewFile();
+					else {
+						f.delete();
+						f.createNewFile();
+					}
+					FileWriter fw = null;
+					fw = new FileWriter(f);
+					String s = "";
+					for (int i = 0; i < vName.size(); i++) {
+						String value = table.getValueAt(index, i).toString();
+						int n1 = value.indexOf("\"");
+						int n2 = value.lastIndexOf("\"");
+						if (n1 >= 0)
+							value = value.substring(n1+1, n2);
+						s = s + vName.get(i) + "=" + value + "\r\n";
+					}
+					fw.write(s);
+					fw.flush();
+					fw.close();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				Runtime rt = Runtime.getRuntime();
+				String s = "D:/OpenModelica1.9.7/bin/omc.exe D:/OneChart/CalOne.mos";
+				String url = "D:/OneChart/Modelica/System.Sys_res.csv";
+				File file = new File(url);
+				Process proc = null;
+				try {
+					proc = rt.exec(s);
+					proc.waitFor();
+					while (!new CheckCSV().IsTime160(file)) {
+						proc = rt.exec(s);
+						proc.waitFor();
+					}
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				proc.destroy();
+			}
+		});
+
+		JSeparator separator = new JSeparator();
+
+		JScrollPane scrollPane = new JScrollPane();
+
+		JButton btnNewButton = new JButton("输入数据");
+		btnNewButton.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				vData.clear();
+				Vector vRow = new Vector();
+				for (NNode n : names) {
+					String type = new DecNodeType().GetTypeOfDecNode(n, cha);
+					switch (type) {
+					case "1":
+						vRow.add("外部变量");
+						break;
+					case "2":
+						vRow.add("内部变量");
+						break;
+					case "3":
+						vRow.add("全局变量");
+						break;
+					}
+				}
+				vData.add(vRow.clone());
+				vRow = new Vector();
+				for (NNode n : names) {
+					String name = new GetTableName().GetNNodeName(n);
+					List<Chart> c1 = new ArrayList();
+					c1.add(cha);
+					String type = new GetNNodeType().GetNType1(name, c1);
+					switch (type) {
+					case "Num":
+						vRow.add("Num");
+						break;
+					case "Bool":
+						vRow.add("Bool变量");
+						break;
+					}
+				}
+				vData.add(vRow.clone());
+				DefaultTableModel model = new DefaultTableModel(vData, vName);
+				table.setModel(model);
+			}
+		});
+
+		JButton btnNewButton_1 = new JButton("全路径生成");
+		btnNewButton_1.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				vData.clear();
+				for (List<P_Keys> p : list) {
+					Vector vRow = new Vector();
+					for (P_Keys k : p) {
+						String name = new GetName().varname(k.getNode());
+						for (int i = 0; i < names.size(); i++) {
+							String tm = new GetName().varname(names.get(i));
+							vRow.add("/");
+							if (tm.equals(name))
+								vRow.set(i, k.getValue());
+						}
+					}
+					vData.add(vRow.clone());
+					DefaultTableModel model = new DefaultTableModel(vData, vName);
+					table.setModel(model);
+				}
+			}
+		});
+
+		JButton btnNewButton_2 = new JButton("数据可视化");
+		GroupLayout gl_contentPane = new GroupLayout(contentPane);
+		gl_contentPane.setHorizontalGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_contentPane.createSequentialGroup()
+						.addGroup(gl_contentPane
+								.createParallelGroup(Alignment.TRAILING)
+								.addGroup(gl_contentPane.createSequentialGroup().addContainerGap()
+										.addComponent(btnNewButton).addGap(16).addComponent(btnNewButton_1).addGap(18)
+										.addComponent(button).addGap(18).addComponent(btnNewButton_2).addGap(15))
+								.addGroup(gl_contentPane.createSequentialGroup().addGap(26)
+										.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+												.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 773,
+														Short.MAX_VALUE)
+												.addComponent(separator, GroupLayout.DEFAULT_SIZE, 773,
+														Short.MAX_VALUE))))
+						.addContainerGap()));
+		gl_contentPane.setVerticalGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_contentPane.createSequentialGroup().addGap(25)
+						.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE).addComponent(btnNewButton)
+								.addComponent(btnNewButton_2).addComponent(button).addComponent(btnNewButton_1))
+						.addPreferredGap(ComponentPlacement.UNRELATED)
+						.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+								GroupLayout.PREFERRED_SIZE)
+						.addPreferredGap(ComponentPlacement.UNRELATED)
+						.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 321, Short.MAX_VALUE).addContainerGap()));
+
+		table = new JTable();
+		table.setOpaque(false);
+		table.setBackground(Color.WHITE);
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		if (!names.isEmpty())
+			for (NNode td : names) {
+				String tm = "";
+				if (td.getType().equals("uml:DecisionNode"))
+					tm = new GetName().varname(td);
+				if (td.getType().equals("uml:AcceptEventTimerAction")) {
+					int i = td.getName().indexOf("(");
+					int j = td.getName().indexOf(")");
+					tm = td.getName().substring(i + 1, j);
+				}
+				vName.add(tm);
+			}
+		DefaultTableModel model = new DefaultTableModel(vData, vName);
+		table.setModel(model);
+		scrollPane.setViewportView(table);
+		contentPane.setLayout(gl_contentPane);
+	}
+}

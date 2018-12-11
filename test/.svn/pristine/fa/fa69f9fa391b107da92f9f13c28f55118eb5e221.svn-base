@@ -1,0 +1,22 @@
+package Function;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.dom4j.DocumentException;
+
+import Object.Chart;
+
+public class ChartFunction {
+	public List<Chart> Createchart(List<String> url) throws DocumentException {
+		List<Chart> cha = new ArrayList();
+		for (String s : url) {
+			String name = new GetChartName().chartname(s);
+			Chart t = null;
+			if (name != null)
+				t = new Chart(s, name);
+			cha.add(t);
+		}
+		return cha;
+	}
+}

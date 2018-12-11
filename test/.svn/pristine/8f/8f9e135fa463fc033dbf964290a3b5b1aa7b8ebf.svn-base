@@ -1,0 +1,152 @@
+package Function;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import Object.Chart;
+import Object.DecNode;
+import Object.Keys;
+import Object.NNode;
+
+public class RelyFunction {
+	public List<Keys> FinalFunction(List<DecNode> declist, List<Chart> cha) { //只生成起始决定节点和依赖的节点
+		List<Keys> list = new ArrayList();
+		for (DecNode n : declist)
+			for (NNode node : n.getNode()) {
+				List<Keys> tmp = new ArrayList();
+				tmp = DecFunction(node, n.getChart(), cha);
+				if (tmp.size() != 0) {
+					for (Keys k : tmp) {
+						if (k.getTwo() != null) {
+							if (k.getTwo().getType().equals("uml:DecisionNode")
+									|| k.getTwo().getType().equals("uml:AcceptEventTimerAction")) {
+								Keys t = new Keys();
+								t.setOne(tmp.get(0).getOne());
+								t.setTwo(k.getTwo());
+								list.add(t);
+								break;
+							}
+						}
+					}
+				}
+			}
+		return list;
+	}
+
+	public List<Keys> DecFunction(NNode node, String c, List<Chart> cha) { // 按顺序生成list
+		String var_name = new GetName().varname(node);
+		List<Keys> list = new ArrayList();
+		for (Chart ch : cha) {
+			if (c.equals(ch.getChart())) {
+				int acce = 0; // 一个图中只需要依赖一个接受条件动作
+				for (NNode n : ch.getNode()) {
+					if (n.getType().equals("uml:AcceptEventAction") || n.getType().equals("uml:Action")) {
+						String name = new GetName().varname(n);
+						if (var_name.equals(name)) {
+							Keys t = new Keys();
+							if (n.getType().equals("uml:AcceptEventAction") && acce == 0) {// &&new
+																							// Rely().FindNode(n.getOutIdref()[0],ch)==node
+								acce = 1;
+								t.setOne(node);
+								t.setTwo(n);
+								list.add(t);
+								Keys k1 = AccFunction(n, cha);
+								list.add(k1);
+								if (k1.getTwo() != null) {
+									Keys k2 = SenFunction(k1.getTwo(), cha);
+									if (k2 != null) {
+										list.add(k2);
+										List<Keys> l4 = TimeFunction(k2.getTwo(), cha);
+										list.addAll(l4);
+										List<Keys> l5 = N_DecFucntion(k2.getTwo(), cha);
+										list.addAll(l5);
+										for (Keys m : l5) {
+											List<Keys> l6 = new ArrayList();
+											l6 = DecFunction(m.getTwo(), m.getTwo().getChart(), cha);
+											list.addAll(l6);
+										}
+									} else {
+										List<Keys> l1 = TimeFunction(k1.getTwo(), cha);
+										list.addAll(l1);
+									}
+								}
+								List<Keys> l2 = N_DecFucntion(k1.getTwo(), cha);
+								list.addAll(l2);
+								for (Keys m : l2) {
+									List<Keys> l3 = new ArrayList();
+									l3 = DecFunction(m.getTwo(), m.getTwo().getChart(), cha);
+									list.addAll(l3);
+								}
+							}
+							if (n.getType().equals("uml:Action")) {
+								t.setOne(node);
+								t.setTwo(n);
+								list.add(t);
+								List<Keys> l4 = TimeFunction(n, cha);
+								list.addAll(l4);
+								List<Keys> l5 = N_DecFucntion(n, cha);
+								list.addAll(l5);
+								for (Keys m : l5) {
+									List<Keys> l6 = new ArrayList();
+									l6 = DecFunction(m.getTwo(), m.getTwo().getChart(), cha);
+									list.addAll(l6);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return list;
+	}
+
+	public List<Keys> TimeFunction(NNode node, List<Chart> cha) {
+		List<Keys> list = new ArrayList();
+		List<Keys> rely2 = new Rely().Rely2(cha); // 等待时间决定的依赖关系
+		for (Keys k : rely2) {
+			if (k.getOne() == node)
+				list.add(k);
+		}
+		return list;
+	}
+
+	public List<Keys> N_DecFucntion(NNode node, List<Chart> cha) {
+		List<Keys> list = new ArrayList();
+		List<Keys> rely3 = new Rely().Rely3(cha); //决定节点决定的依赖关系
+		for (Keys k : rely3) {
+			if (k.getOne() == node)
+				list.add(k);
+		}
+		return list;
+	}
+
+	public Keys AccFunction(NNode node, List<Chart> cha) { // 接收和发送依赖函数
+		Keys n = new Keys();
+		List<Keys> rely1 = new Rely().Rely1(cha); // 接收和发送依赖关系
+		for (Keys k : rely1) {
+			if (k.getOne() == node) {
+				n = k;
+			}
+		}
+		return n;
+	}
+
+	public Keys SenFunction(NNode node, List<Chart> cha) { // 发送和基本动作依赖关系
+		Keys n = new Keys();
+		for (Chart c : cha) {
+			if (c.getChart().equals(node.getChart())) {
+				for (NNode t : c.getNode()) {
+					String name1 = new GetName().varname(node);
+					String name2 = null;
+					if (t.getName() != null)
+						name2 = new GetName().varname(t);
+					if (t.getType().equals("uml:Action") && name1.equals(name2)) {
+						n.setOne(node);
+						n.setTwo(t);
+					}
+				}
+			}
+		}
+		return n;
+	}
+}

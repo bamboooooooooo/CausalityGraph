@@ -1,0 +1,749 @@
+package main;
+
+import javax.swing.*;
+import javax.swing.border.TitledBorder;
+import javax.swing.filechooser.FileFilter;
+
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.event.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.prefs.Preferences;
+
+public class Platform {
+	public static void main(String[] args) {
+		main.MyFrame2 myFrame2 = new MyFrame2("Model Transformation");
+		myFrame2.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+	}
+
+	public void ShowUI(String title) {
+		new MyFrame2(title);
+	}
+}
+
+class MyFrame2 extends JFrame {
+	private static final long serialVersionUID = -8193131179158828964L;
+	// 主界面
+	public JMenuBar menubar = new JMenuBar();
+	public JMenu menu1 = new JMenu("File");
+	public JMenu menu2 = new JMenu("Help");
+	public JMenuItem item1 = new JMenuItem("Recently Open");
+	public JMenuItem item2 = new JMenuItem("Guide");
+	public JMenuItem item3 = new JMenuItem("Exit");
+	// Panel
+	public JPanel SysMLPane = new JPanel();
+	public JPanel ModelicaPane = new JPanel();
+	public JPanel MiddlePane = new JPanel();
+	public JPanel lSysMLPane = new JPanel();
+	public JPanel mSysMLPane = new JPanel();
+	public JPanel rSysMLPane = new JPanel();
+	public JPanel tlSysMLPane = new JPanel();
+	public JPanel tmSysMLPane = new JPanel();
+	public JPanel trSysMLPane = new JPanel();
+	// public JPanel brSysMLPane = new JPanel();
+	// JScollPanel
+	/*
+	 * public JScrollPane sp1 = null; public JScrollPane sp2 = null;
+	 */
+	public JScrollPane sp3 = null;
+	// border
+	TitledBorder border1 = new TitledBorder("SysML Model Input");
+	TitledBorder border2 = new TitledBorder("Modelica Model Output");
+	GuideDialog guideDialog = new GuideDialog(this);
+
+	// public JButton btnOpen = new JButton(" Open XMI File ");
+	public JButton btnOpen1 = new JButton(" Open");
+	public JButton btnOpen2 = new JButton(" Open");
+	public JButton btnOpen3 = new JButton(" Open");
+	public JButton btnOpen4 = new JButton(" Open");
+	public JButton btnOpen5 = new JButton(" Open");
+	public JButton btnOpen6 = new JButton(" Open");
+	public JButton btnOpen7 = new JButton(" Open");
+	public JButton btnOpen8 = new JButton(" Open");
+	public JButton btnOpen9 = new JButton(" Open");
+	public JButton btnOpen10 = new JButton(" Open");
+
+	// public JButton btnTransform = new JButton(" Transform");
+	public JButton btnTransform1 = new JButton(" Transform");
+	public JButton btnTransform2 = new JButton(" Transform");
+	public JButton btnTransform3 = new JButton(" Generate");
+	JRadioButton radioButton1 = new JRadioButton("Sliding Window");
+	JRadioButton radioButton2 = new JRadioButton("External Object");
+	ButtonGroup group = new ButtonGroup();
+
+	// txtField
+	public JTextField txtField1 = new JTextField();
+	public JTextField txtField2 = new JTextField();
+	public JTextField txtField3 = new JTextField();
+	public JTextField txtField4 = new JTextField();
+	public JTextField txtField5 = new JTextField();
+	public JTextField txtField6 = new JTextField();
+	public JTextField txtField7 = new JTextField();
+	public JTextField txtField8 = new JTextField();
+	public JTextField txtField9 = new JTextField();
+	public JTextField txtField10 = new JTextField();
+	// JLabel
+	public JLabel labelCM = new JLabel("Single Component Model");
+	public JLabel labelEOM = new JLabel("External Object Model");
+	public JLabel labelSM = new JLabel("System Models");
+	public JLabel label1 = new JLabel("Activity Diagram File:");
+	public JLabel label2 = new JLabel("BDD File(Component Properties):");
+	public JLabel label3 = new JLabel("Pameter Data File:");
+	public JLabel label4 = new JLabel("Activity Diagram Files(Components):");
+	public JLabel label5 = new JLabel("Activity Diagram File(System):");
+	public JLabel label6 = new JLabel("BDD Files(Components Properties):");
+	public JLabel label7 = new JLabel("BDD File(System Composition):");
+	public JLabel label8 = new JLabel("IBD File(System Context):");
+	public JLabel label9 = new JLabel("Pameter Data File:");
+	public JLabel label10 = new JLabel("System Context IBD File:");
+
+	public JTextArea txtInfo1 = new JTextArea(50, 50);
+	public JTextArea txtInfo2 = new JTextArea(50, 50);
+	public JTextArea txtInfo3 = new JTextArea(50, 50);
+
+	public final String[] fileExts = { "txt", "c", "cpp", "java" };
+	public final String fileExt = "xml";
+
+	public BufferedReader reader = null;
+	public JFileChooser fileDlg1 = null;
+	public JFileChooser fileDlg2 = null;
+	public JFileChooser fileDlg3 = null;
+	public JFileChooser fileDlg4 = null;
+	public JFileChooser fileDlg5 = null;
+	public JFileChooser fileDlg6 = null;
+	public JFileChooser fileDlg7 = null;
+	public JFileChooser fileDlg8 = null;
+	public JFileChooser fileDlg9 = null;
+	public JFileChooser fileDlg10 = null;
+
+	ActionListener openListener1 = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getActionCommand() == "open") {
+				String filePaths = "";
+				fileDlg1 = new JFileChooser("E:\\");
+				fileDlg1.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+				fileDlg1.setMultiSelectionEnabled(true); // 允许选择多个文件
+				fileDlg1.addChoosableFileFilter(new MyFileFilter(fileExt));
+				int returnval = fileDlg1.showOpenDialog(null);
+				if (returnval == JFileChooser.APPROVE_OPTION) {
+					File[] files = fileDlg1.getSelectedFiles();
+					for (File file : files) {
+						String filePath = file.getAbsolutePath();
+						filePaths += filePath + ";";
+					}
+					txtField1.setText(filePaths);
+				}
+			}
+		}
+	};
+
+	ActionListener openListener2 = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getActionCommand() == "open") {
+				String filePaths = "";
+				fileDlg2 = new JFileChooser("E:\\");
+				fileDlg2.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+				fileDlg2.setMultiSelectionEnabled(true); // 允许选择多个文件
+				fileDlg2.addChoosableFileFilter(new MyFileFilter(fileExt));
+				int returnval = fileDlg2.showOpenDialog(null);
+				if (returnval == JFileChooser.APPROVE_OPTION) {
+					File[] files = fileDlg2.getSelectedFiles();
+					for (File file : files) {
+						String filePath = file.getAbsolutePath();
+						filePaths += filePath + ";";
+					}
+					txtField2.setText(filePaths);
+				}
+			}
+		}
+	};
+
+	ActionListener openListener3 = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getActionCommand() == "open") {
+				fileDlg3 = new JFileChooser("E:\\");
+				fileDlg3.addChoosableFileFilter(new MyFileFilter(fileExt));
+				switch (fileDlg3.showOpenDialog(null)) {
+				case JFileChooser.APPROVE_OPTION:
+					String filePath = fileDlg3.getSelectedFile().getAbsolutePath();
+					txtField3.setText(filePath);
+					break;
+				case JFileChooser.CANCEL_OPTION:
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	};
+
+	ActionListener openListener4 = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getActionCommand() == "open") {
+				String filePaths = "";
+				fileDlg4 = new JFileChooser("E:\\");
+				fileDlg4.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+				fileDlg4.setMultiSelectionEnabled(true); // 允许选择多个文件
+				fileDlg4.addChoosableFileFilter(new MyFileFilter(fileExt));
+				int returnval = fileDlg4.showOpenDialog(null);
+				if (returnval == JFileChooser.APPROVE_OPTION) {
+					File[] files = fileDlg4.getSelectedFiles();
+					for (File file : files) {
+						String filePath = file.getAbsolutePath();
+						filePaths += filePath + ";";
+					}
+					txtField4.setText(filePaths);
+				}
+			}
+		}
+	};
+
+	ActionListener openListener5 = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getActionCommand() == "open") {
+				fileDlg5 = new JFileChooser("E:\\");
+				fileDlg5.addChoosableFileFilter(new MyFileFilter(fileExt));
+				switch (fileDlg5.showOpenDialog(null)) {
+				case JFileChooser.APPROVE_OPTION:
+					String filePath = fileDlg5.getSelectedFile().getAbsolutePath();
+					txtField5.setText(filePath);
+					break;
+				case JFileChooser.CANCEL_OPTION:
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	};
+
+	ActionListener openListener6 = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getActionCommand() == "open") {
+				String filePaths = "";
+				fileDlg6 = new JFileChooser("E:\\");
+				fileDlg6.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+				fileDlg6.setMultiSelectionEnabled(true); // 允许选择多个文件
+				fileDlg6.addChoosableFileFilter(new MyFileFilter(fileExt));
+				int returnval = fileDlg6.showOpenDialog(null);
+				if (returnval == JFileChooser.APPROVE_OPTION) {
+					File[] files = fileDlg6.getSelectedFiles();
+					for (File file : files) {
+						String filePath = file.getAbsolutePath();
+						filePaths += filePath + ";";
+					}
+					txtField6.setText(filePaths);
+				}
+			}
+		}
+	};
+
+	ActionListener openListener7 = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getActionCommand() == "open") {
+				fileDlg7 = new JFileChooser("E:\\");
+				fileDlg7.addChoosableFileFilter(new MyFileFilter(fileExt));
+				switch (fileDlg7.showOpenDialog(null)) {
+				case JFileChooser.APPROVE_OPTION:
+					String filePath = fileDlg7.getSelectedFile().getAbsolutePath();
+					txtField7.setText(filePath);
+					break;
+				case JFileChooser.CANCEL_OPTION:
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	};
+
+	ActionListener openListener8 = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getActionCommand() == "open") {
+				fileDlg8 = new JFileChooser("E:\\");
+				fileDlg8.addChoosableFileFilter(new MyFileFilter(fileExt));
+				switch (fileDlg8.showOpenDialog(null)) {
+				case JFileChooser.APPROVE_OPTION:
+					String filePath = fileDlg8.getSelectedFile().getAbsolutePath();
+					txtField8.setText(filePath);
+					break;
+				case JFileChooser.CANCEL_OPTION:
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	};
+
+	ActionListener openListener9 = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getActionCommand() == "open") {
+				fileDlg9 = new JFileChooser("E:\\");
+				fileDlg9.addChoosableFileFilter(new MyFileFilter(fileExt));
+				switch (fileDlg9.showOpenDialog(null)) {
+				case JFileChooser.APPROVE_OPTION:
+					String filePath = fileDlg9.getSelectedFile().getAbsolutePath();
+					txtField9.setText(filePath);
+					break;
+				case JFileChooser.CANCEL_OPTION:
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	};
+
+	ActionListener exitListener = new ActionListener() {
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		}
+	};
+	// Single component model transformation listener
+	ActionListener singleTransformListener = new ActionListener() {
+		public void actionPerformed(ActionEvent e) {
+			try {
+				ArrayList<String> actFilePaths = new ArrayList<String>();
+				File[] files1 = fileDlg1.getSelectedFiles();
+				for (File file : files1) {
+					String filePath = file.getAbsolutePath();
+					actFilePaths.add(filePath);
+				}
+				ArrayList<String> bddFilePaths = new ArrayList<String>();
+				File[] files2 = fileDlg2.getSelectedFiles();
+				for (File file : files2) {
+					String filePath = file.getAbsolutePath();
+					bddFilePaths.add(filePath);
+				}
+				String fileDlg3Path = fileDlg3.getSelectedFile().getAbsolutePath().replace("\\","/");
+				ModelicaProject.generateModelicaProject(bddFilePaths, "", "", actFilePaths, "",
+						fileDlg3Path);
+				txtInfo3.setText(null);
+				showFileContent(ModelicaProject.generateModelicaProject(bddFilePaths, "", "", actFilePaths, "",
+						fileDlg3Path), txtInfo3);
+
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+	};
+	// Multiple component models transformation listener
+	ActionListener multiTransformListener = new ActionListener() {
+		public void actionPerformed(ActionEvent e) {
+			ArrayList<String> actFilePaths = new ArrayList<String>();
+			File[] actFiles = fileDlg4.getSelectedFiles();
+			for (File file : actFiles) {
+				String filePath = file.getAbsolutePath();
+				actFilePaths.add(filePath);
+			}
+			ArrayList<String> bddFilePaths = new ArrayList<String>();
+			File[] bddFiles = fileDlg6.getSelectedFiles();
+			for (File file : bddFiles) {
+				String filePath = file.getAbsolutePath();
+				bddFilePaths.add(filePath);
+			}
+			String fileDlg9Path = fileDlg9.getSelectedFile().getAbsolutePath().replace("\\","/");
+			try {
+				ModelicaProject.generateModelicaProject(bddFilePaths, fileDlg7.getSelectedFile().getAbsolutePath(),
+						fileDlg8.getSelectedFile().getAbsolutePath(), actFilePaths,
+						fileDlg5.getSelectedFile().getAbsolutePath(), fileDlg9Path);
+				txtInfo3.setText(null);
+				showFileContent(ModelicaProject.generateModelicaProject(bddFilePaths,
+						fileDlg7.getSelectedFile().getAbsolutePath(), fileDlg8.getSelectedFile().getAbsolutePath(),
+						actFilePaths, fileDlg5.getSelectedFile().getAbsolutePath(),
+						fileDlg9Path), txtInfo3);
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+	};
+	ActionListener guideListener = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			guideDialog.setVisible(true);
+		}
+	};
+
+	MyFrame2(String title) {
+		super(title);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		// MyFrame1
+		setLayout(new GridBagLayout());
+		setPreferredSize(new Dimension(1000, 900));
+		setVisible(true);
+		pack();
+		// SysMLPane、ModelicaPane外框
+		border1.setTitleJustification(TitledBorder.LEFT);
+		border1.setTitlePosition(TitledBorder.TOP);
+		SysMLPane.setBorder(border1);
+		border2.setTitleJustification(TitledBorder.LEFT);
+		border2.setTitlePosition(TitledBorder.TOP);
+		ModelicaPane.setBorder(border2);
+		// SysMLPane、MiddlePane、ModelicaPane布局
+		GridBagConstraints gbc1 = new GridBagConstraints();
+		gbc1.gridx = 0;
+		gbc1.gridy = 0;
+		gbc1.gridwidth = 0;
+		gbc1.gridheight = 1;
+		gbc1.weightx = 1;
+		gbc1.weighty = 0.6;
+		gbc1.fill = GridBagConstraints.BOTH;
+		GridBagConstraints gbc2 = new GridBagConstraints();
+		gbc2.gridx = 0;
+		gbc2.gridy = 1;
+		gbc2.gridwidth = 0;
+		gbc2.gridheight = 1;
+		gbc2.weightx = 1;
+		gbc2.weighty = 0.1;
+		gbc2.fill = GridBagConstraints.BOTH;
+		GridBagConstraints gbc3 = new GridBagConstraints();
+		gbc3.gridx = 2;
+		gbc3.gridy = 2;
+		gbc3.gridwidth = 0;
+		gbc3.gridheight = 1;
+		gbc3.weightx = 1;
+		gbc3.weighty = 0.3;
+		gbc3.fill = GridBagConstraints.BOTH;
+		GridBagConstraints gbc4 = new GridBagConstraints();
+		gbc4.gridx = 0;
+		gbc4.gridy = 0;
+		gbc4.gridwidth = 0;
+		gbc4.gridheight = 1;
+		gbc4.weightx = 1;
+		gbc4.weighty = 0.2;
+		gbc4.fill = GridBagConstraints.BOTH;
+		GridBagConstraints gbc5 = new GridBagConstraints();
+		gbc5.gridx = 0;
+		gbc5.gridy = 1;
+		gbc5.gridwidth = 0;
+		gbc5.gridheight = 1;
+		gbc5.weightx = 1;
+		gbc5.weighty = 0.8;
+		gbc5.fill = GridBagConstraints.BOTH;
+		GridBagConstraints gbc6 = new GridBagConstraints();
+		gbc6.gridx = 0;
+		gbc6.gridy = 0;
+		gbc6.gridwidth = 0;
+		gbc6.gridheight = 1;
+		gbc6.weightx = 1;
+		gbc6.weighty = 1;
+		gbc6.fill = GridBagConstraints.BOTH;
+		// panel外框
+		lSysMLPane.setBorder(BorderFactory.createEtchedBorder());
+		mSysMLPane.setBorder(BorderFactory.createEtchedBorder());
+		rSysMLPane.setBorder(BorderFactory.createEtchedBorder());
+
+		// 整体布局
+		Container cp = getContentPane();
+		SysMLPane.setLayout(new GridLayout(1, 2));
+
+		txtInfo1.setFont(new Font("Courier New", Font.PLAIN, 14));
+		txtInfo1.setBackground(Color.GRAY);
+		txtInfo1.setForeground(Color.ORANGE);
+		// sp1 = new JScrollPane(txtInfo1);
+		txtInfo2.setFont(new Font("Courier New", Font.PLAIN, 14));
+		txtInfo2.setBackground(Color.GRAY);
+		txtInfo2.setForeground(Color.ORANGE);
+		// sp2 = new JScrollPane(txtInfo2);
+		txtInfo3.setFont(new Font("Courier New", Font.PLAIN, 14));
+		txtInfo3.setBackground(Color.GRAY);
+		txtInfo3.setForeground(Color.ORANGE);
+		sp3 = new JScrollPane(txtInfo3);
+		// lSysMLPane布局
+		SysMLPane.add(lSysMLPane);
+		// SysMLPane.add(mSysMLPane);
+		SysMLPane.add(rSysMLPane);
+		lSysMLPane.setLayout(new GridBagLayout());
+		lSysMLPane.add(tlSysMLPane, gbc4);
+		// lSysMLPane.add(sp1, gbc5);
+		tlSysMLPane.setLayout(null);
+
+		labelCM.setSize(300, 20); // setBounds(10,10,300,20)
+
+		label1.setBounds(5, 40, 200, 20);
+		txtField1.setBounds(5, 70, 220, 20);
+		btnOpen1.setBounds(240, 70, 70, 20);
+		radioButton1.setBounds(5, 100, 120, 20);
+
+		label2.setBounds(5, 110, 200, 20);
+		txtField2.setBounds(5, 140, 220, 20);
+		btnOpen2.setBounds(240, 140, 70, 20);
+
+		label3.setBounds(5, 180, 300, 20);
+		txtField3.setBounds(5, 210, 220, 20);
+		btnOpen3.setBounds(240, 210, 70, 20);
+
+		btnTransform1.setBounds(100, 300, 120, 30);
+
+		// radioButton2.setBounds(150, 58, 120, 20);
+		tlSysMLPane.add(labelCM);
+		tlSysMLPane.add(label1);
+		tlSysMLPane.add(label2);
+		tlSysMLPane.add(label3);
+		tlSysMLPane.add(txtField1);
+		tlSysMLPane.add(txtField2);
+		tlSysMLPane.add(txtField3);
+		tlSysMLPane.add(btnOpen1);
+		tlSysMLPane.add(btnOpen2);
+		tlSysMLPane.add(btnOpen3);
+		// tlSysMLPane.add(radioButton1);
+		// tlSysMLPane.add(radioButton2);
+		group.add(radioButton1);
+		// group.add(radioButton2);
+		tlSysMLPane.add(btnTransform1);
+
+		// mSysMLPane布局
+		mSysMLPane.setLayout(new GridBagLayout());
+		mSysMLPane.add(tmSysMLPane, gbc4);
+		tmSysMLPane.setLayout(null);
+
+		labelEOM.setSize(300, 20); // setBounds(10,10,300,20)
+
+		btnTransform2.setBounds(100, 350, 120, 30);
+
+		tmSysMLPane.add(labelEOM);
+		tmSysMLPane.add(label4);
+		tmSysMLPane.add(label6);
+		tmSysMLPane.add(txtField4);
+		tmSysMLPane.add(txtField6);
+		tmSysMLPane.add(btnOpen4);
+		tmSysMLPane.add(btnOpen6);
+		tmSysMLPane.add(btnTransform2);
+
+		// rSysMLPane布局
+		rSysMLPane.setLayout(new GridBagLayout());
+		rSysMLPane.add(trSysMLPane, gbc4);
+		trSysMLPane.setLayout(null);
+
+		labelSM.setSize(300, 20);
+
+		label4.setBounds(5, 40, 300, 20);
+		txtField4.setBounds(5, 70, 220, 20);
+		btnOpen4.setBounds(240, 70, 70, 20);
+
+		label5.setBounds(5, 110, 200, 20);
+		txtField5.setBounds(5, 140, 220, 20);
+		btnOpen5.setBounds(240, 140, 70, 20);
+
+		label6.setBounds(5, 180, 300, 20);
+		txtField6.setBounds(5, 210, 220, 20);
+		btnOpen6.setBounds(240, 210, 70, 20);
+
+		label7.setBounds(5, 250, 300, 20);
+		txtField7.setBounds(5, 280, 220, 20);
+		btnOpen7.setBounds(240, 280, 70, 20);
+
+		label8.setBounds(5, 320, 200, 20);
+		txtField8.setBounds(5, 350, 220, 20);
+		btnOpen8.setBounds(240, 350, 70, 20);
+
+		label9.setBounds(5, 390, 200, 20);
+		txtField9.setBounds(5, 420, 220, 20);
+		btnOpen9.setBounds(240, 420, 70, 20);
+
+		label10.setBounds(5, 280, 200, 20);
+		txtField10.setBounds(5, 310, 220, 20);
+		btnOpen10.setBounds(240, 310, 70, 20);
+
+		btnTransform3.setBounds(350, 180, 120, 30);
+
+		trSysMLPane.add(labelSM);
+		trSysMLPane.add(label4);
+		trSysMLPane.add(label5);
+		trSysMLPane.add(label6);
+		trSysMLPane.add(label7);
+		trSysMLPane.add(label8);
+		trSysMLPane.add(label9);
+		trSysMLPane.add(txtField4);
+		trSysMLPane.add(txtField5);
+		trSysMLPane.add(txtField6);
+		trSysMLPane.add(txtField7);
+		trSysMLPane.add(txtField8);
+		trSysMLPane.add(txtField9);
+		trSysMLPane.add(btnOpen4);
+		trSysMLPane.add(btnOpen5);
+		trSysMLPane.add(btnOpen6);
+		trSysMLPane.add(btnOpen7);
+		trSysMLPane.add(btnOpen8);
+		trSysMLPane.add(btnOpen9);
+		trSysMLPane.add(btnTransform3);
+
+		// ModelicaPane
+		ModelicaPane.setLayout(new GridBagLayout());
+		ModelicaPane.add(sp3, gbc6);
+		// MiddlePane
+		// MiddlePane.add(btnTransform);
+		// 上中下主分区大小位置
+		cp.add(SysMLPane, gbc1);
+		// cp.add(MiddlePane, gbc2);
+		cp.add(ModelicaPane, gbc3);
+		// menu
+		menubar.add(menu1);
+		menubar.add(menu2);
+		menu1.add(item1);
+		menu1.add(item3);
+		menu2.add(item2);
+		setJMenuBar(menubar);
+		/*-------add listeners-----------*/
+		item2.addActionListener(guideListener);
+		item3.addActionListener(exitListener);
+		/*---------single component model listener--------*/
+		btnOpen1.setActionCommand("open");
+		btnOpen1.addActionListener(openListener1);
+		btnOpen2.setActionCommand("open");
+		btnOpen2.addActionListener(openListener2);
+		btnOpen3.setActionCommand("open");
+		btnOpen3.addActionListener(openListener3);
+		btnTransform1.addActionListener(singleTransformListener);
+        /*-------system model listener*/
+		btnOpen4.setActionCommand("open");
+		btnOpen4.addActionListener(openListener4);
+		btnOpen5.setActionCommand("open");
+		btnOpen5.addActionListener(openListener5);
+		btnOpen6.setActionCommand("open");
+		btnOpen6.addActionListener(openListener6);
+		btnOpen7.setActionCommand("open");
+		btnOpen7.addActionListener(openListener7);
+		btnOpen8.setActionCommand("open");
+		btnOpen8.addActionListener(openListener8);
+		btnOpen9.setActionCommand("open");
+		btnOpen9.addActionListener(openListener9);
+		btnTransform3.addActionListener(multiTransformListener);
+	}
+
+	public void showFileContent(String fileName, JTextArea jta) {
+		try {
+			reader = new BufferedReader(new FileReader(fileName));
+			int idxLine = 0;
+			try {
+				String line;
+				while ((line = reader.readLine()) != null) {
+					String lineNo = null;
+					++idxLine;
+					if (idxLine < 10)
+						lineNo = "00" + idxLine;
+					else if (idxLine < 100)
+						lineNo = "0" + idxLine;
+					else
+						lineNo = "" + idxLine;
+					jta.append(lineNo + ": " + line + "\r\n");
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} catch (FileNotFoundException ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	public void showFileContentNoLineNum(String fileName, JTextArea jta) {
+		try {
+			reader = new BufferedReader(new FileReader(fileName));
+			try {
+				String line;
+				while ((line = reader.readLine()) != null) {
+					jta.append(line + "\r\n");
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} catch (FileNotFoundException ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	class MyFileFilter extends FileFilter {
+
+		private String fileExt;
+
+		MyFileFilter(String ext) {
+			fileExt = ext;
+		}
+
+		private String getExtName(String absPath) {
+			int idxDot = absPath.lastIndexOf('.');
+			return absPath.substring(idxDot + 1);
+		}
+
+		@Override
+		public boolean accept(File f) {
+			return f.isDirectory() || getExtName(f.getName()).equals(fileExt);
+		}
+
+		@Override
+		public String getDescription() {
+			String descr = null;
+			if (fileExt.equals("txt"))
+				descr = "Text File (*.txt)";
+			else if (fileExt.equals("cpp"))
+				descr = "C++ Source File (*.cpp)";
+			else if (fileExt.equals("c"))
+				descr = "C Source File (*.c)";
+			else if (fileExt.equals("java"))
+				descr = "Java Source File (*.java)";
+			else if (fileExt.equals("xml"))
+				descr = "XML File (*.xml)";
+			return descr;
+		}
+
+	}
+
+	class GuideDialog extends JDialog {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+		public GuideDialog(JFrame parent) {
+			super(parent, "Guide", true);
+			setLayout(null);
+			JButton btnOK = new JButton("OK");
+			JTextArea txtInfo3 = new JTextArea(50, 50);
+			JScrollPane sp3 = new JScrollPane(txtInfo3);
+			btnOK.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO Auto-generated method stub
+					dispose();
+				}
+			});
+			// GuideDialog
+			setSize(500, 300);
+			Container container = getContentPane();
+			btnOK.setBounds(200, 220, 80, 20);
+			sp3.setBounds(10, 10, 465, 200);
+			setLocationRelativeTo(parent);
+			// tool guide
+			showFileContentNoLineNum("src/files/Guide.txt", txtInfo3);
+			container.add(sp3);
+			container.add(btnOK);
+		}
+	}
+}

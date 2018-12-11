@@ -1,0 +1,73 @@
+package Function;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.dom4j.Attribute;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import Object.Att;
+import Object.Block;
+
+public class Dom4forBDD {
+	public List<Block> blocks;
+
+	public Dom4forBDD() {
+		this.blocks = new ArrayList();
+	}
+
+	public void FindBlock(String url) throws DocumentException {
+		SAXReader reader = new SAXReader();
+		Document document = reader.read(new File(url));
+		Element root = document.getRootElement();
+		ListBlock(root);
+	}
+
+	private void ListBlock(Element root) {
+		if (root.getName().equals("packagedElement")) {
+			List<Attribute> list = root.attributes();
+			for (Attribute attribute : list) {
+				if (attribute.getName().equals("type") && attribute.getValue().equals("uml:Class")) {
+					Block block = new Block();
+					List<Att> a3 =new ArrayList();
+					for (Attribute attribute1 : list) {
+						if (attribute1.getName().equals("name"))
+							block.setName(attribute1.getValue());
+					}
+					List<Element> list1 = root.elements();
+					for (Element e1 : list1) {
+						if (e1.getName().equals("ownedAttribute")) {
+							Att att = new Att();
+							List<Attribute> list3 = e1.attributes();
+							for (Attribute a1 : list3)
+								if (a1.getName().equals("name"))
+									att.setName(a1.getValue());
+							List<Element> list2 = e1.elements();
+							for (Element e2 : list2)
+								if (e2.getName().equals("type")) {
+									List<Attribute> list4 = e2.attributes();
+									for (Attribute a2 : list4) {
+										if (a2.getName().equals("idref"))
+											att.setType(a2.getValue());
+									}
+								}
+							a3.add(att);
+						}
+					}
+					block.setVals(a3);
+					blocks.add(block);
+				}
+			}
+		}
+		Iterator<Element> iterator = root.elementIterator();//遍历xml中每一条数据
+		while (iterator.hasNext()) {
+			Element e = iterator.next();
+			ListBlock(e);
+		}
+	}
+}

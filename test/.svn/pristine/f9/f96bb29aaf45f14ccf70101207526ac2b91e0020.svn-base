@@ -1,0 +1,51 @@
+package object;
+public class Edge {
+	String type;
+	String source;
+	String target;
+	String id;
+	String bool;
+ 
+	public String getBool() {
+		return bool;
+	}
+	public void setBool(String bool) {
+		this.bool = bool;
+	}
+	public void Edge(){
+    	this.type=null;
+    	this.source=null;
+    	this.target=null;
+    	this.id=null;
+    	this.bool=null;
+    }
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String getSource() {
+		return source;
+	}
+
+	public void setSource(String source) {
+		this.source = source;
+	}
+
+	public String getTarget() {
+		return target;
+	}
+
+	public void setTarget(String target) {
+		this.target = target;
+	}
+}

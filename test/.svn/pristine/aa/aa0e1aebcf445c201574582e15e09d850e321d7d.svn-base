@@ -1,0 +1,32 @@
+package object;
+
+public class Text {
+	String t1;
+	String t2;
+	String type;
+	String No;
+	public String getNo() {
+		return No;
+	}
+	public void setNo(String no) {
+		No = no;
+	}
+	public String getT1() {
+		return t1;
+	}
+	public void setT1(String t1) {
+		this.t1 = t1;
+	}
+	public String getT2() {
+		return t2;
+	}
+	public void setT2(String t2) {
+		this.t2 = t2;
+	}
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
+	}
+}

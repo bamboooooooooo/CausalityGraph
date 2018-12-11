@@ -1,0 +1,140 @@
+package object;
+
+public class basicpath {
+	String No;
+	String B_T_gkp;
+	String B_T_gkbTime;
+	String A_Tab;
+	String B_WorkMode;
+	String C_GZMode;
+	String C_AccType;
+	String C_a1;
+	String C_a2;
+	String LD_Elevation;
+	String C1_notHandled;
+	String C1_available;
+	String Z_GZValue;
+	String Z_GZValueTime;
+	String Z_T;
+
+	public String getNo() {
+		return No;
+	}
+
+	public void setNo(String no) {
+		No = no;
+	}
+
+	public String getB_T_gkp() {
+		return B_T_gkp;
+	}
+
+	public void setB_T_gkp(String b_T_gkp) {
+		B_T_gkp = b_T_gkp;
+	}
+
+	public String getB_T_gkbTime() {
+		return B_T_gkbTime;
+	}
+
+	public void setB_T_gkbTime(String b_T_gkbTime) {
+		B_T_gkbTime = b_T_gkbTime;
+	}
+
+	public String getA_Tab() {
+		return A_Tab;
+	}
+
+	public void setA_Tab(String a_Tab) {
+		A_Tab = a_Tab;
+	}
+
+	public String getB_WorkMode() {
+		return B_WorkMode;
+	}
+
+	public void setB_WorkMode(String b_WorkMode) {
+		B_WorkMode = b_WorkMode;
+	}
+
+	public String getC_GZMode() {
+		return C_GZMode;
+	}
+
+	public void setC_GZMode(String c_GZMode) {
+		C_GZMode = c_GZMode;
+	}
+
+	public String getC_AccType() {
+		return C_AccType;
+	}
+
+	public void setC_AccType(String c_AccType) {
+		C_AccType = c_AccType;
+	}
+
+	public String getC_a1() {
+		return C_a1;
+	}
+
+	public void setC_a1(String c_a1) {
+		C_a1 = c_a1;
+	}
+
+	public String getC_a2() {
+		return C_a2;
+	}
+
+	public void setC_a2(String c_a2) {
+		C_a2 = c_a2;
+	}
+
+	public String getC1_notHandled() {
+		return C1_notHandled;
+	}
+
+	public void setC1_notHandled(String c1_notHandled) {
+		C1_notHandled = c1_notHandled;
+	}
+
+	public String getC1_available() {
+		return C1_available;
+	}
+
+	public void setC1_available(String c1_available) {
+		C1_available = c1_available;
+	}
+
+	public String getZ_GZValue() {
+		return Z_GZValue;
+	}
+
+	public void setZ_GZValue(String z_GZValue) {
+		Z_GZValue = z_GZValue;
+	}
+
+	public String getZ_GZValueTime() {
+		return Z_GZValueTime;
+	}
+
+	public void setZ_GZValueTime(String z_GZValueTime) {
+		Z_GZValueTime = z_GZValueTime;
+	}
+
+	public String getZ_T() {
+		return Z_T;
+	}
+
+	public void setZ_T(String z_T) {
+		Z_T = z_T;
+	}
+
+	public String getLD_Elevation() {
+		return LD_Elevation;
+	}
+
+	public void setLD_Elevation(String lD_Elevation) {
+		LD_Elevation = lD_Elevation;
+	}
+
+}

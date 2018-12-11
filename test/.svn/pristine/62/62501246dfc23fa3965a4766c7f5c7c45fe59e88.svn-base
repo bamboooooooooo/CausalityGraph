@@ -1,0 +1,55 @@
+package function;
+
+public class E1opE2 {
+	public String[] GetE1opE2(String exp) {
+		String[] res = { null, null, null };
+		if (exp != null) {
+			String E1 = null;
+			String op = null;
+			String E2 = null;
+			int[] n = { 0, 0, 0 };
+			exp = exp.replace(" ", "");
+			int n1 = exp.indexOf(">");
+			if (n1 == -1)
+				n1 = 999;
+			n[0] = n1;
+			int n2 = exp.indexOf("=");
+			if (n2 == -1)
+				n2 = 999;
+			n[1] = n2;
+			int n3 = exp.indexOf("<");
+			if (n3 == -1)
+				n3 = 999;
+			n[2] = n3;
+			for (int i = 0; i < 3; i++)
+				for (int j = i + 1; j < 3; j++) {
+					if (n[i] > n[j]) {
+						int t;
+						t = n[i];
+						n[i] = n[j];
+						n[j] = t;
+					}
+				}
+			E1 = exp.substring(0, n[0]);
+			if (n2 != 999) {
+				op = exp.substring(n[0], n[0] + 2);
+				E2 = exp.substring(n[0] + 2);
+			} else {
+				op = exp.substring(n[0], n[0] + 1);
+				E2 = exp.substring(n[0] + 1);
+			}
+			res[0] = E1;
+			res[1] = op;
+			res[2] = E2;
+		}
+		return res;
+	}
+
+	public boolean isNumeric(String str) {
+		for (int i = 0; i < str.length(); i++) {
+			if (!Character.isDigit(str.charAt(i)))
+				return false;
+		}
+		return true;
+	}
+}

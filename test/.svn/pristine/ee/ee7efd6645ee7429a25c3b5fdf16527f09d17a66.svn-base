@@ -1,0 +1,44 @@
+package object;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.dom4j.DocumentException;
+
+import Function.Dom4forBDD;
+import Function.GetBDDName;
+
+public class BDD {
+	List<Block> blocks;
+	String name;
+
+	public BDD() {
+		this.blocks = new ArrayList();
+		this.name = null;
+	}
+
+	public BDD(String url) throws DocumentException {
+		// TODO Auto-generated constructor stub
+		Dom4forBDD bdd=new Dom4forBDD();
+		bdd.FindBlock(url);
+		this.setBlocks(bdd.blocks);
+		this.name=new GetBDDName().bddname(url);
+	}
+
+	public List<Block> getBlocks() {
+		return blocks;
+	}
+
+	public void setBlocks(List<Block> blocks) {
+		this.blocks = blocks;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+}

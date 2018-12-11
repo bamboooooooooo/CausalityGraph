@@ -1,0 +1,138 @@
+package main;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import type.Block;
+import type.Variable;
+
+public class BDDXMI {
+
+	public static void main(String[] args) throws Exception {
+		// TODO Auto-generated method stub
+		ArrayList<String> bddFiles = new ArrayList<String>();
+		bddFiles.add("C:\\Users\\wen\\Desktop\\XMI\\BDD.xml");
+		bddFiles.add("C:\\Users\\wen\\Desktop\\XMI\\eoBDD.xml");
+		String type = parseType(bddFiles, "Time1");
+		System.out.println(type);
+	}
+
+	static ArrayList<Variable> parseVariable(ArrayList<String> bddFiles, String blockName) throws Exception {
+		ArrayList<Variable> variables = new ArrayList<Variable>();
+		for (String bddFile : bddFiles) {
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(bddFile);
+			List<Element> ATTRIBUTES = document
+					.selectNodes("//packagedElement[@name='" + blockName + "']/ownedAttribute");
+			if (ATTRIBUTES == null) {
+				continue;
+			} else {
+				for (Element a : ATTRIBUTES) {
+					Variable v = new Variable();
+					v.name = a.attributeValue("name");
+					// isStatic
+					if (a.attributeValue("isStatic") == null) {
+						v.isStatic = false;
+					} else {
+						v.isStatic = true;
+					}
+					// default value
+					if (a.selectSingleNode("defaultValue") != null) {
+						Element DEFAULTVALUE = (Element) a.selectSingleNode("defaultValue");
+						v.defaultValue = DEFAULTVALUE.attributeValue("value");
+					} else {
+						v.defaultValue = null;
+					}
+					Element TYPE = (Element) a.selectSingleNode("type");
+					switch (TYPE.attributeValue("idref")) {
+					case "EAJava_real":
+						v.type = "Real";
+						break;
+					case "EAJava_int":
+						v.type = "Integer";
+						break;
+					case "EAJava_boolean":
+						v.type = "Boolean";
+						break;
+					}
+					variables.add(v);
+				}
+			}
+		}
+		return variables;
+	}
+
+	// system composition
+	static ArrayList<Block> parseSystemComposition(String bddFilePath) throws DocumentException {
+		ArrayList<Block> blocks = new ArrayList<Block>();
+		if(bddFilePath != ""){
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(bddFilePath);		
+			List<Element> CONNECTORS = document.selectNodes("//connector");
+			for (Element c : CONNECTORS) {
+				Block block = new Block();
+				Element SOURCE = (Element) c.selectSingleNode("./source");
+				Element MODEL = (Element) SOURCE.selectSingleNode("./model");
+				Element ROLE = (Element) SOURCE.selectSingleNode("./role");
+				block.id = SOURCE.attributeValue("idref");
+				block.blockName = MODEL.attributeValue("name");
+				block.role = ROLE.attributeValue("name");
+				blocks.add(block);
+			}
+			// root block
+			List<Element> BLOCKS = document.selectNodes("//packagedElement[@xmi:type='uml:Class']");
+			for (Element b : BLOCKS) {
+				boolean duplicated = false;
+				for (Element c : CONNECTORS) {
+					Element SOURCE = (Element) c.selectSingleNode("./source");
+					if (b.attributeValue("id").equals(SOURCE.attributeValue("idref"))) {
+						duplicated = true;
+						break;
+					}
+				}
+				if (!duplicated) {
+					Block rootBlock = new Block();
+					rootBlock.id = b.attributeValue("id");
+					rootBlock.blockName = b.attributeValue("name");
+					rootBlock.isRoot = true;
+					blocks.add(rootBlock);
+				}
+			}
+		}		
+		return blocks;
+	}
+
+	// get the type of a parameter
+	static String parseType(ArrayList<String> bddFiles, String parName) throws Exception {
+		String type = null;
+		for (String bddFile : bddFiles) {
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(bddFile);
+			Element attribute = (Element) document.selectSingleNode("//ownedAttribute[@name ='" + parName + "']");
+			if (attribute == null) {
+				continue;
+			} else {
+				Element attributeType = (Element) attribute.selectSingleNode("./type");
+				switch (attributeType.attributeValue("idref")) {
+				case "EAJava_real":
+					type = "Real";
+					break;
+				case "EAJava_int":
+					type = "Integer";
+					break;
+				case "EAJava_boolean":
+					type = "Boolean";
+					break;
+				}
+				break;
+			}
+
+		}
+		return type;
+	}
+}

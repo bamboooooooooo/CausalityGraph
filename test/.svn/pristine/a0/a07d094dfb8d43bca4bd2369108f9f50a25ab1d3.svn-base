@@ -1,0 +1,40 @@
+package function;
+
+import object.NNode;
+
+public class GetName {
+	public String varname(NNode node) {  //决定节点
+		String var_name = null;
+		int[] n = { 0, 0, 0, 0 };
+		int n1 = node.getName().indexOf(">");
+		if (n1 == -1)
+			n1 = 999;
+		n[0] = n1;
+		int n2 = node.getName().indexOf("=");
+		if (n2 == -1)
+			n2 = 999;
+		n[1] = n2;
+		int n3 = node.getName().indexOf("<");
+		if (n3 == -1)
+			n3 = 999;
+		n[2] = n3;
+		int n4 = node.getName().indexOf(":");
+		if (n4 == -1)
+			n4 = 999;
+		n[3] = n4;
+		for (int i = 0; i < 4; i++)
+			for (int j = i + 1; j < 4; j++) {
+				if (n[i] > n[j]) {
+					int t;
+					t = n[i];
+					n[i] = n[j];
+					n[j] = t;
+				}
+			}
+		if (n[0] == 999)
+			var_name = node.getName().trim();
+		else
+			var_name = node.getName().substring(0, n[0]).trim();
+		return var_name;
+	}
+}

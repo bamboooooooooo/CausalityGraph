@@ -1,0 +1,65 @@
+package function;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.Collections;
+
+public class CheckCSV {
+	// 检查Data下文件数是否有480条，输出缺失的文件名
+	public Boolean Is480() {
+		// TODO Auto-generated method stub
+		Boolean res = true;
+		File file = new File("D:/PathData/Data");
+		String[] fs = file.list();
+		ArrayList<FileString> filename = new ArrayList();
+		for (String name : fs) {
+			filename.add(new FileString(name));
+		}
+		Collections.sort(filename);
+		int j = 1;
+		for (int i = 0; i < filename.size(); i++) {
+			String name = filename.get(i).toString().replaceAll("[.][^.]+$", "");
+			int No = Integer.parseInt(name);
+			if (No != j) {
+				System.out.println(j);
+				res = false;
+				j++;
+			}
+			j++;
+		}
+		return res;
+	}
+
+	// 确定CSV文件内容不能为空
+	public Boolean IsEmpty(File f) throws Exception { // url为csv文件路径
+		BufferedReader reader = new BufferedReader(new FileReader(f.getPath()));
+		reader.readLine(); // 第一行信息，为标题信息，不用，如果需要，注释掉
+		String line = reader.readLine();
+		if (line == null) {
+			return true;
+		} else
+			return false;
+	}
+
+	// 判断结束时间是否是160
+	public Boolean IsTime160(File f) throws Exception {
+		BufferedReader reader = new BufferedReader(new FileReader(f.getPath()));
+		reader.readLine(); // 第一行信息，为标题信息，不用，如果需要，注释掉
+		int s = 0;
+		String line = null;
+		String last = null;
+		while ((line = reader.readLine()) != null) {
+			String item[] = line.split(","); // CSV格式文件为逗号分隔符文件，这里根据逗号切分
+			last = item[0];
+			s++;
+			line = reader.readLine();
+		}
+		if(last!=null&&last.equals("160"))
+			return true;
+		else 
+			return false;
+	}
+}

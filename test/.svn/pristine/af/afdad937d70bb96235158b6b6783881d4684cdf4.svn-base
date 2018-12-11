@@ -1,0 +1,18 @@
+package type;
+
+/*
+ * 
+ * SendSignalAction & AcceptEventAction
+ * 
+ * */
+public class SAAction {
+	public String name;
+	public String owner;
+	public String type;
+	
+	  @Override
+	  public boolean equals(Object obj) {
+		 SAAction p = (SAAction)obj;
+	    return this.name.equals(p.name) && this.owner.equals(p.owner) && this.type.equals(p.type);
+	  }
+}
